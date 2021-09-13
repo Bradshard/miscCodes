@@ -98,7 +98,7 @@ namespace BooksToDatabase
             this.lbl_bookCount.TabIndex = 6;
             this.lbl_bookCount.Text = "Book Count will be displayed here.";
             // 
-            // Form1
+            // Frm_Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
