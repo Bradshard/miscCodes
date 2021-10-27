@@ -1,0 +1,46 @@
+---
+title: "First R assignment"
+author: "Burkan Bereketoglu"
+date: "October 26, 2021"
+output: html_document
+---
+As a first R assignment I decide to do a simple data package on R itself.
+
+Here is the data.
+```{r}
+library(datasets)
+
+data("airquality")
+
+summary(airquality)
+
+plot(airquality$Ozone,airquality$Solar.R, 
+     main="Ozone vs Solar Radiation",
+        xlab="Ozone",
+        ylab="Solar Radiaton",
+     col = c("blue","red"))
+```
+
+Red color represents solar rays, Blue color represents Blue sky and from that ozone.
+
+```{r}
+names(iris) <- tolower(names(iris))
+library(datasets)
+data("iris")
+summary(iris)
+
+iris_spec <- iris
+
+iris_spec$Species <- recode_factor(iris_spec$Species, '0' = 'setosa', '1' = 'versicolor', '2' = 'virginica')
+
+hist(iris,
+     main = "Sepal Length Frequency Graph"
+     )
+
+sepal_vir <- filter(iris, iris$Species == "virginica")
+
+sepal_vers <- filter(iris, iris$Species == "versicolor")
+sepal_set <- filter(iris, iris$Species =="setosa")
+
+sepal_vir
+```
