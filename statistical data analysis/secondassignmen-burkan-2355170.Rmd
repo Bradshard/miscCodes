@@ -1,0 +1,231 @@
+---
+title: "Second Assignment - CENG574"
+author: "Abdullah Burkan Bereketoglu"
+date: "11/3/2021"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 5
+    number_sections: yes
+    theme: united
+    highlight: tango
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, out.height= '20%', out.width= '20%'}
+knitr::include_graphics("E:/Tubitak/Abdullah_Burkan-Bereketoglu_ChE204-2020Fall.jpg")
+```
+
+# CENG 574 Assignment 2 - Dataset Selection
+
+## Introduction
+  For week of 1/11/2021 - 7/11/2021 we are given the task of selecting data-set from one of the various platforms. In this project the data-set is taken from "[Kaggle](https://www.kaggle.com/)" platform. Name of the data-set is "[Loan Prediction Based on Customer Behavior](https://www.kaggle.com/subhamjain/loan-prediction-based-on-customer-behavior?select=Test+Data.csv)". The "metadata" of the data-set informs us that this data is collected for a Hackathon named "Univ.Ai". The data-set covers information on consumer loans all across India.[1]
+  
+  In the data-set a training observation of 252000 people and also a test sample that consists of 28000 people is provided with the necessary features, to analyze the test sample's each individuals risk_flag from the training set.
+  
+  Risk flag shows us whether an individual is defaulted on a loan or not which helps the banks to whether give or not give a loan to an individual next time. In training set data of people with different income, age, gender, marital status etc. given also with the Risk Flag data to train our model and then test the test data to understand whether a person didn't pay their loan or not.
+
+## Preliminary Analysis
+### Some information about the dataset
+#### Reading the Data
+
+Let's first load the data-set and look at what we got in the data-set.
+
+```{r, echo=TRUE}
+library(readr)
+
+Loan_data_train <- read.csv("Training_Data.csv", header = TRUE, sep = ",")
+
+Loan_data_test <- read.csv("Test_Data.csv", header = TRUE, sep = ",")
+
+head(Loan_data_train) #looking at the head of the data to see the columns and some values of train.
+
+head(Loan_data_test) # looking at the head of the data to see the columns and some values of test.
+```
+#### Some of the Basic Properties
+We can also look at the column Names, how many columns are there and how many observations, which we can name as rows in the data-set.
+```{r, echo=FALSE}
+#Names of the features
+
+names(Loan_data_train)
+
+```
+
+```{r, echo=TRUE, include=FALSE}
+definitions <- c("Shows each individual observation given in the data-set, represented as integer.",
+                 "Shows each individual Id's annual salary represented as integer.",
+                 "Shows years lived 'till data is taken of the individual. Represented in integer values.",
+                 "Professional experience level of the individuals given in years.Represented in integer values.",
+                 "Professional Work of the individual.Represented in string values.",
+                 "Shows whether the individual is married or not. (No data on separated, engaged etc.). In string form.",
+                 "Shows whether individual owned or rented or neither of the home ownership. Represented in integer values.",
+                 "Shows whether the individual owns a car or not. Represented in integer values.",
+                 "Whether the individual is defaulted on a loan or not. Represented in integer values.",
+                 "Years of experience in the current job is given of individual's.Represented in integer values.",
+                 "Number of years in the current residence of the individual's. Represented in integer values.",
+                 "City the individual currently resides in. Represented in string values.",
+                 "State of residence of individual in data-set.Represented in string values.")
+```
+These column names are called features.
+
+Let's cover what they represent in the data.
+```{r, echo=TRUE, results='asis'}
+library(knitr)
+
+define_table <- cbind(colnames(Loan_data_train),definitions)
+kable(define_table, col.names = c("Features","Definitions"))
+```
+
+
+```{r, echo=TRUE}
+#Variable count or features of train
+feature_loan_data_train = ncol(Loan_data_train)
+
+#Variable count or features of test
+feature_loan_data_test = ncol(Loan_data_test)
+
+# Observation count of train
+obs_loan_data_train = nrow(Loan_data_train)
+
+# Observation count of test
+obs_loan_data_test = nrow(Loan_data_test)
+
+sprintf("Total observation count in the training data is %s and the number of features(columns) is %s.",
+        obs_loan_data_train, feature_loan_data_train)
+```
+  Now, let's look at the test data feature names, counts, and sample count.
+```{r, echo=TRUE}
+sprintf("Total observation count in the test data is %s and the number of features(columns) is %s.",
+        obs_loan_data_test, feature_loan_data_test)
+
+colnames(Loan_data_test)
+```
+
+What makes this change???
+We will now see the missing features with a slight error in the Test data.
+
+```{r, echo=TRUE, warning=FALSE}
+
+if (colnames(Loan_data_train) != colnames(Loan_data_test)) {
+  missing_features <- c(colnames(Loan_data_train[colnames(Loan_data_train) != colnames(Loan_data_test)]))
+
+}
+
+length(missing_features) # how many missing or different features.
+```
+
+  In two data-set one can see that there are 2 differences between the feature count and that is the 
+```{r, echo=FALSE, warning=FALSE}
+missing_features
+```
+values. 
+
+"Id" tag is shown as different feature, because the observation count is not equal in test and train data-set. So, by the end of analysis we end up with only "Risk_Flag" as our different feature.
+
+Since, the data-set covers a column for the sorting, which is the "Risk_flag" that is not in test data is not a feature but the end result of the other features other than "Id".
+
+Therefore we can conclude that we only have 11 features.
+
+```{r, echo = TRUE}
+
+print(Loan_data_train$Income[1:10])
+```
+
+  It is important to note that Income values given in the data-set is in Indian Rupee.
+
+```{r, echo = TRUE}
+plot(Loan_data_train[0:50,])
+
+```
+
+  A general plot is made to see all variables together plotted one by one with each other.
+  
+```{r, echo=TRUE, message=FALSE}
+
+attach(Loan_data_train)
+
+library(datasets)
+library(tidyverse)
+library(tibble)
+
+comparison <- as_tibble(Loan_data_train %>% 
+  select(Age, Income, Risk_Flag) %>% 
+  arrange(desc(Age)))
+
+summary(comparison)
+cor(Age,Income)
+cor(Risk_Flag,Age)
+
+```
+
+#### Determining The Unique Values of the Data  
+##### Training Data  
+In this part, we will look at the each individual unique value in each column for our training data.
+```{r, echo = TRUE, message=FALSE}
+library("dplyr") 
+Loan_data_train %>% 
+  select(-c("Id"))%>%
+  summarise_all(n_distinct)
+
+```
+  Let's look at how many of the individuals are not paying their loans.
+  
+```{r, echo = TRUE, message=FALSE}
+
+Loan_data_train %>% 
+  group_by(Risk_Flag)%>%
+  summarise(count=n())
+```
+  This gives us an idea that most of the individuals don't have a risk flag for a bank loan.
+
+### Comparison of Data Variables
+
+  Let's do comparison.
+  
+```{r, echo=TRUE, message=FALSE}
+
+attach(Loan_data_train)
+
+filtered_young_ages_risk_factor <- Loan_data_train %>%
+  filter(Risk_Flag %in% c(0,1), Age < 50) %>%
+  select((c(Age,Risk_Flag))) %>%
+  arrange(desc(Age)) %>%
+  group_by(Age) %>%
+  summarize(mean = mean(Risk_Flag), TotalNumber= n())
+
+head(filtered_young_ages_risk_factor)
+mean(filtered_young_ages_risk_factor$mean)
+```
+  here we have for old people.
+```{r, echo=TRUE, message=FALSE}
+
+attach(Loan_data_train)
+
+filtered_old_ages_risk_factor <- Loan_data_train %>%
+  filter(Risk_Flag %in% c(0,1), Age > 50) %>%
+  select((c(Age,Risk_Flag))) %>%
+  arrange(desc(Age)) %>%
+  group_by(Age) %>%
+  summarize(mean = mean(Risk_Flag), TotalNumber= n())
+
+head(filtered_old_ages_risk_factor)
+mean(filtered_old_ages_risk_factor$mean)
+```
+  By this we can see young people's Risk flag means also mean of old people's Risk flag to understand whether there is a correlation between being old and not paying or the opposite.
+  
+```{r, echo=TRUE}
+sprintf("Mean of Risk Flag for old people is %s and for young people is %s.",
+        mean(filtered_old_ages_risk_factor$mean), mean(filtered_young_ages_risk_factor$mean))
+```
+
+## Conclusion
+
+We, by the conducted preliminary analysis of the "Univ.Ai" data-set on "Loan Prediction Based on Customer Behavior", learned about the observation-training size, different features that is used in the case to analyze risk to whether give bank loan to a person on the test-sample or not, with various characteristics of the features given in the data-set. 
+
+Also as a conclusion, we can deduce that there is not a big risk flag gap for elderly and youth.
+
+## References
+
+[1] Subham Surana, "Loan Prediction Based on Customer Behavior."Aug. 2021, Accessed: Nov. 3, 2021. [Online]. Available: https://www.kaggle.com/subhamjain/loan-prediction-based-on-customer-behavior/metadata

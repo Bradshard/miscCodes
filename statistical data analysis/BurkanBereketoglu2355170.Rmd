@@ -1,0 +1,402 @@
+---
+title: "STAT291 HW1"
+author: "Abdullah Burkan Bereketoglu - 2355170"
+date: "11/14/2021"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+    theme: united
+    highlight: tango
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, out.height= '20%', out.width= '20%'}
+knitr::include_graphics("E:/Tubitak/Abdullah_Burkan-Bereketoglu_ChE204-2020Fall.jpg")
+```
+
+# Question 1
+
+## Part A 
+
+```{r}
+a <- seq(20,100,20)
+print(a)
+
+```
+  Sequence from 20 to 100 by step-size 20.
+  
+## Part B
+
+```{r}
+b <- seq(-10, 5,0.5)
+print(b)
+
+```
+  Sequence from -10 to 5 by step-size 0.5.
+
+## Part C
+
+```{r}
+c <- seq(from = 12, to = -6,
+         length.out = 7)
+print(c)
+
+```
+  Sequence from 12 to -6 with a limiting length 7
+so,(-6-12)/(7-1) = -3 step-size is -3.
+
+
+## Part D 
+
+```{r}
+
+
+d <- seq(0.01, 0.09, 0.02)
+print(d)
+
+```
+  Sequence from 0.01 to 0.09 by step-size 0.02.
+
+## Part G 
+
+```{r}
+g <- rep(x = seq(10,40,by = 10), times = 4)
+print(g)
+```
+  Sequence from 10 to 40 by step-size 10 and every
+element is repeated 4 times.
+  
+## Part H
+
+```{r}
+h <- rep(1:3,times = 1,each = 7)
+print(h)
+```
+  From 1 to 3 by step-size 1 every element repeated 7 times but every repetition of the same element is with each other. e.g {5,5,5} or {3,3,3,4,4,4}.
+  
+## Part I
+
+```{r}
+i <- rep(x = seq(10,60,by = 10),
+         times = c(rep(1:2, times = 3 ,each = 1)))
+print(i)
+```
+  Repetition of a sequence from 10 to 60 with step-size 10, but this time repetition occurs on a 1 to 2 basis. e.g {1,2,2,3,4,4,5}
+  
+## Part J 
+
+```{r}
+j <- rep(1:4,times = 3, each = 2)
+print(j)
+
+```
+  Repetition from 1 to 4 by step-size 1. 3 times and each copied 2 times for every trial. 
+
+# Question 2
+
+## Part A
+
+```{r}
+A <- sum(1:50)
+print(A)
+
+```
+  Sum of all numbers from 1 to 50.
+
+\begin{align*}
+\sum_{i=1}^{50} i
+\end{align*}
+
+## Part B
+
+```{r}
+B <- sum(1/(10:20))
+print(B)
+```
+  Sum of reciprocals of numbers from 10 to 20. 
+
+\begin{align*}
+\sum_{i=10}^{20} \frac{1}{i}
+\end{align*}  
+
+## Part C
+
+```{r}
+C <- sum((exp(-0.5)*((0.5)**(1:10)))/factorial(1:10))
+print(C)
+```
+  Sum of numbers from 1 to 10 with Euler constant with power minus one over two multiplied by one over two with power number sequence then divided by i factorial.
+  
+\begin{align*}  
+\sum_{i=1}^{10} \frac{(e^{-0.5})*(0.5)^i}{i{!}}
+\end{align*}
+
+## Part D
+
+```{r}
+D <- sum(((-1)**(1:20))*((1:20)**2))
+print(D)
+```
+  Sum of all numbers from 1 to 20, each squared and multiplied by -1 power number sequence i.
+```{=latex}
+-1^{i}
+```
+
+\begin{align*}  
+\sum_{i=1}^{20} (-1)^{i}*i^{2}
+\end{align*}
+
+
+# Question 3
+
+## Part A
+
+```{r}
+
+matrix <- matrix(c(5,3,7,0,5,1,6,9,5,1,5,3),
+                 nrow = 3, ncol= 4,
+                 byrow = FALSE,
+                 dimnames = list(c("r.1","r.2","r.3"),
+                                 c("c.1","c.2","c.3","c.4")))
+matrix
+```
+  Matrix of 3 by 4 with column and row names given.
+
+\begin{bmatrix}  
+5 & 0 & 6 & 1 \\
+3 & 5 & 9 & 5 \\
+7 & 1 & 5 & 3 \\
+\end{bmatrix}
+
+
+## Part B
+
+```{r}
+newRow <- c(5,1,7,0)
+matrix <- rbind(newRow, matrix)
+
+print(matrix)
+
+```
+  Matrix of 4 by 4 with column and row names given.
+
+
+\begin{bmatrix}
+5 & 1 & 7 & 0 \\
+5 & 0 & 6 & 1 \\
+3 & 5 & 9 & 5 \\
+7 & 1 & 5 & 3 \\
+\end{bmatrix}
+
+## Part C
+
+```{r}
+
+fifth_column <- matrix[4,]*(-1)
+matrix <- cbind(fifth_column, matrix)
+
+print(matrix)
+```
+  Matrix of 4 by 5, new column is the fourth rows negative version.
+  
+\begin{bmatrix}
+-7 & 5 & 1 & 7 & 0 \\
+-1 & 5 & 0 & 6 & 1 \\
+-5 & 3 & 5 & 9 & 5 \\
+-3 & 7 & 1 & 5 & 3 \\
+\end{bmatrix}
+
+
+### extra for q3
+
+```{r}
+
+rownames(matrix) <- c("r.1","r.2","r.3","r.4")
+colnames(matrix) <- c("c.1","c.2","c.3","c.4","c.5")
+
+print(matrix)
+
+```
+  Row names and column names are given to the matrix.
+
+
+# Question 4
+
+## Preliminaries
+
+```{r}
+vec1 <- c(1:10)
+vec2 <- seq(10, 60, by= 10)
+vec3 <- c("Red", "Blue", "Yellow", "Green", "Black")
+vec4 <- c(-1,-2,10,20,-3,-4,30,40,-5,50)
+```
+  Preliminary work done to get done the questions.
+
+## Part A
+
+```{r}
+q4.a <- c(vec1,vec2)
+
+print(q4.a)
+```
+  Vectors vec1 and vec2 are combined & and a vector named q4.a made from this combination.
+  
+## Part B
+
+```{r}
+
+q4.b <- vector()
+q4.b <- c(q4.a[which((q4.a %% 3) == 0)])
+q4.b
+### This is the methods taught in the class
+```
+  From vector q4.a made in part A, elements retun 0 from modulus 3 of modulo operator are combined in the q4.b vector. 
+
+### Extra for part B
+
+```{r}
+#### This part is extra, but gives same thing.
+q4.b <- vector()
+q4.b
+for(numero in q4.a){
+  if(any(numero %% 3 == 0)){
+    q4.b <- append(q4.b, numero)
+  }
+}
+q4.b
+```
+  Same thing as above but with for and if.
+
+## Part C
+
+```{r}
+q4.c <- vector()
+q4.c <- c(vec4[which(vec4 < 0)],vec3)
+q4.c
+```
+  Elements of vec4 that are negative with all elemenets of vec3 combined and q4.c vector created.
+  
+## Part D
+
+```{r}
+q4.d <- vector()
+q4.d <- c(vec1[(seq(1,length(vec1),by =2))],vec3[(seq(2,length(vec3),by =2))])
+q4.d
+```
+  Odd indexed elements of vec1 and even indexed elements of vec3 are combined in q4.d, vector created.
+
+## Part E
+
+```{r}
+length(which(vec3 == "Red"))
+# or 
+table(vec3[which(vec3 == "Red")])
+
+```
+  How many elements in vec3 is Red is given.
+  
+# Question 5
+
+## Preliminary
+```{r}
+
+
+matrix_A <- matrix(c(4,3,-5,-1),
+                   nrow = 2, ncol = 2)
+matrix_B <- matrix(c(8,1,1,-6),
+                   nrow = 2, ncol = 2)
+matrix_C <- matrix(c(0,-2,1,4),
+                   nrow = 2, ncol = 2)
+matrix_D <- matrix(c(2,2,1,0),
+                   nrow = 2, ncol = 2)
+```
+  Matrices from A to D are created to do the questions.
+  
+## Part A
+
+```{r}
+
+det(matrix_C) # so can have inverse
+result <- t(matrix_A) + matrix_B %*% solve(matrix_C)
+result
+
+```
+  First, determinant value checked to see if it's not 0. Then solved the problem given below.
+
+\begin{align*}
+\mathbf{A}^\intercal + \mathbf{B}\times\mathbf{C}^{-1}
+\end{align*}  
+
+
+## Part B
+
+```{r}
+determinants <- sort(c(det(matrix_A),
+                  det(matrix_B),
+                  det(matrix_C),
+                  det(matrix_D)),
+                  decreasing = TRUE)
+
+print(determinants)
+
+```
+ Found determinants of all matrices given and sorted by a decreasing order.
+ 
+## Part C
+
+```{r}
+matrix_E <- matrix(c(cbind(rbind(matrix_A,matrix_B),
+                           rbind(matrix_C,matrix_D))),
+                   nrow = 4, ncol = 4)
+matrix_E
+
+```
+  A new matrix called E mate from minding all four matrices.
+  
+\begin{bmatrix}
+4 & -5 & 0 & 1\\
+3 & -1 & -2 & 4\\
+8 & 1 & 2 & 1\\
+1 & -6 & 2 & 0
+\end{bmatrix}
+  
+## Part D
+
+```{r}
+
+result_mean <- mean(matrix_E[,3])
+print(result_mean)
+
+```
+  Mean of third column of the new combined matrix, and added to a result_mean object.
+
+## Part E
+
+```{r}
+diag(matrix_E) <- rep(0, times = 4)
+
+matrix_E
+
+```
+  Diagonals of the new E matrix, replaced with zeros.
+  
+\begin{bmatrix}
+0 & -5 & 0 & 1\\
+3 & 0 & -2 & 4\\
+8 & 1 & 0 & 1\\
+1 & -6 & 2 & 0
+\end{bmatrix}
+  
+
+```{r}
+###### END ########
+
+```
