@@ -1,0 +1,3 @@
+Changes made in Multidimensional Scaling since the distance matrix function dist() and as.dist() different was obvious and full data needed dist(). as.matrix parts are now expunged. 
+
+please read fifth assignment and further for convenience.
