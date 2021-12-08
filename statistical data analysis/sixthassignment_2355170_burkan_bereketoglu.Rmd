@@ -1,0 +1,722 @@
+---
+title: "Sixth Assignment - CENG574"
+author: "Abdullah Burkan Bereketoglu"
+date: "12/8/2021"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 5
+    number_sections: yes
+    theme: united
+    highlight: tango
+  pdf_document:
+    toc: yes
+    toc_depth: '5'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, out.height= '20%', out.width= '20%'}
+knitr::include_graphics("E:/Tubitak/Abdullah_Burkan-Bereketoglu_ChE204-2020Fall.jpg")
+```
+
+# CENG 574 Assignment 4 - Projection of Data
+
+## Introduction
+  For week of 1/11/2021 - 7/11/2021 we are given the task of selecting data-set from one of the various platforms. In this project the data-set is taken from "[Kaggle](https://www.kaggle.com/)" platform. Name of the data-set is "[Loan Prediction Based on Customer Behavior](https://www.kaggle.com/subhamjain/loan-prediction-based-on-customer-behavior?select=Test+Data.csv)". The "metadata" of the data-set informs us that this data is collected for a Hackathon named "Univ.Ai". The data-set covers information on consumer loans all across India.[1]
+  
+  In the data-set a training observation of 252000 people and also a test sample that consists of 28000 people is provided with the necessary features, to analyze the test sample's each individuals risk_flag from the training set.
+  
+  Risk flag shows us whether an individual is defaulted on a loan or not which helps the banks to whether give or not give a loan to an individual next time. In training set data of people with different income, age, gender, marital status etc. given also with the Risk Flag data to train our model and then test the test data to understand whether a person didn't pay their loan or not.
+
+## Preliminary Analysis
+### Some information about the dataset
+#### Reading the Data
+
+Let's first load the data-set and look at what we got in the data-set.
+
+```{r, echo=TRUE}
+library(readr)
+
+Loan_data_train <- read.csv("Training_Data.csv", header = TRUE, sep = ",")
+
+Loan_data_test <- read.csv("Test_Data.csv", header = TRUE, sep = ",")
+
+head(Loan_data_train) #looking at the head of the data to see the columns and some values of train.
+
+head(Loan_data_test) # looking at the head of the data to see the columns and some values of test.
+```
+#### Some of the Basic Properties
+We can also look at the column Names, how many columns are there and how many observations, which we can name as rows in the data-set.
+```{r, echo=FALSE}
+#Names of the features
+
+names(Loan_data_train)
+
+```
+
+```{r, echo=TRUE, include=FALSE}
+definitions <- c("Shows each individual observation given in the data-set, represented as integer.",
+                 "Shows each individual Id's annual salary represented as integer.",
+                 "Shows years lived 'till data is taken of the individual. Represented in integer values.",
+                 "Professional experience level of the individuals given in years.Represented in integer values.",
+                 "Professional Work of the individual.Represented in string values.",
+                 "Shows whether the individual is married or not. (No data on separated, engaged etc.). In string form.",
+                 "Shows whether individual owned or rented or neither of the home ownership. Represented in integer values.",
+                 "Shows whether the individual owns a car or not. Represented in integer values.",
+                 "Whether the individual is defaulted on a loan or not. Represented in integer values.",
+                 "Years of experience in the current job is given of individual's.Represented in integer values.",
+                 "Number of years in the current residence of the individual's. Represented in integer values.",
+                 "City the individual currently resides in. Represented in string values.",
+                 "State of residence of individual in data-set.Represented in string values.")
+```
+These column names are called features.
+
+Let's cover what they represent in the data.
+```{r, echo=TRUE, results='asis'}
+library(knitr)
+
+define_table <- cbind(colnames(Loan_data_train),definitions)
+kable(define_table, col.names = c("Features","Definitions"))
+```
+
+
+```{r, echo=TRUE}
+#Variable count or features of train
+feature_loan_data_train = ncol(Loan_data_train)
+
+#Variable count or features of test
+feature_loan_data_test = ncol(Loan_data_test)
+
+# Observation count of train
+obs_loan_data_train = nrow(Loan_data_train)
+
+# Observation count of test
+obs_loan_data_test = nrow(Loan_data_test)
+
+sprintf("Total observation count in the training data is %s and the number of features(columns) is %s.",
+        obs_loan_data_train, feature_loan_data_train)
+```
+  Now, let's look at the test data feature names, counts, and sample count.
+```{r, echo=TRUE}
+sprintf("Total observation count in the test data is %s and the number of features(columns) is %s.",
+        obs_loan_data_test, feature_loan_data_test)
+
+colnames(Loan_data_test)
+```
+
+What makes this change???
+We will now see the missing features with a slight error in the Test data.
+
+```{r, echo=TRUE, warning=FALSE}
+
+if (colnames(Loan_data_train) != colnames(Loan_data_test)) {
+  missing_features <- c(colnames(Loan_data_train[colnames(Loan_data_train) != colnames(Loan_data_test)]))
+
+}
+
+length(missing_features) # how many missing or different features.
+```
+
+  In two data-set one can see that there are 2 differences between the feature count and that is the 
+```{r, echo=FALSE, warning=FALSE}
+missing_features
+```
+values. 
+
+"Id" tag is shown as different feature, because the observation count is not equal in test and train data-set. So, by the end of analysis we end up with only "Risk_Flag" as our different feature.
+
+Since, the data-set covers a column for the sorting, which is the "Risk_flag" that is not in test data is not a feature but the end result of the other features other than "Id".
+
+Therefore we can conclude that we only have 11 features.
+
+```{r, echo = TRUE}
+
+print(Loan_data_train$Income[1:10])
+```
+
+  It is important to note that Income values given in the data-set is in Indian Rupee.
+
+```{r, echo = TRUE}
+plot(Loan_data_train[0:50,])
+
+```
+
+  A general plot is made to see all variables together plotted one by one with each other.
+  
+```{r, echo=TRUE, message=FALSE}
+
+attach(Loan_data_train)
+
+library(datasets)
+library(tidyverse)
+library(tibble)
+
+comparison <- as_tibble(Loan_data_train %>% 
+  select(Age, Income, Risk_Flag) %>% 
+  arrange(desc(Age)))
+
+summary(comparison)
+cor(Age,Income)
+cor(Risk_Flag,Age)
+
+```
+
+#### Determining The Unique Values of the Data  
+##### Training Data  
+In this part, we will look at the each individual unique value in each column for our training data.
+```{r, echo = TRUE, message=FALSE}
+library("dplyr") 
+Loan_data_train %>% 
+  select(-c("Id"))%>%
+  summarise_all(n_distinct)
+
+```
+  Let's look at how many of the individuals are not paying their loans.
+  
+```{r, echo = TRUE, message=FALSE}
+
+Loan_data_train %>% 
+  group_by(Risk_Flag)%>%
+  summarise(count=n())
+```
+  This gives us an idea that most of the individuals don't have a risk flag for a bank loan.
+
+### Comparison of Data Variables
+
+  Let's do comparison.
+  
+```{r, echo=TRUE, message=FALSE}
+
+attach(Loan_data_train)
+
+filtered_young_ages_risk_factor <- Loan_data_train %>%
+  filter(Risk_Flag %in% c(0,1), Age < 50) %>%
+  select((c(Age,Risk_Flag))) %>%
+  arrange(desc(Age)) %>%
+  group_by(Age) %>%
+  summarize(mean = mean(Risk_Flag), TotalNumber= n())
+
+head(filtered_young_ages_risk_factor)
+mean(filtered_young_ages_risk_factor$mean)
+```
+  here we have for old people.
+```{r, echo=TRUE, message=FALSE}
+
+attach(Loan_data_train)
+
+filtered_old_ages_risk_factor <- Loan_data_train %>%
+  filter(Risk_Flag %in% c(0,1), Age > 50) %>%
+  select((c(Age,Risk_Flag))) %>%
+  arrange(desc(Age)) %>%
+  group_by(Age) %>%
+  summarize(mean = mean(Risk_Flag), TotalNumber= n())
+
+head(filtered_old_ages_risk_factor)
+mean(filtered_old_ages_risk_factor$mean)
+```
+  By this we can see young people's Risk flag means also mean of old people's Risk flag to understand whether there is a correlation between being old and not paying or the opposite.
+  
+```{r, echo=TRUE}
+sprintf("Mean of Risk Flag for old people is %s and for young people is %s.",
+        mean(filtered_old_ages_risk_factor$mean), mean(filtered_young_ages_risk_factor$mean))
+```
+
+## Methods and Code (PCA, MDS + clustering + validation)
+### Preprocessing the data
+  Our data consists of numeric and non-numeric categorical data hence we need to figure out a way to turn these categorical data into numeric data that we can use.
+
+```{r, echo=TRUE}
+Loan_dat_train_x <-Loan_data_train
+m_s <- unique(Loan_dat_train_x[c("Married.Single")])
+c_o <- unique(Loan_dat_train_x[c("Car_Ownership")])
+h_o <- unique(Loan_dat_train_x[c("House_Ownership")])
+val <- 1
+
+
+while (val <= length(Loan_dat_train_x$Married.Single)){
+  Loan_dat_train_x$Married.Single[val] <- ifelse(Loan_data_train$Married.Single[val] == m_s[2,1],1,0)
+
+  val = val + 1 
+}
+
+val <- 1
+
+while (val <= length(Loan_dat_train_x$Car_Ownership)){
+    Loan_dat_train_x$Car_Ownership[val] <- ifelse(Loan_data_train$Car_Ownership[val] == c_o[2,1],1,0)
+    val = val + 1 
+}
+
+val <- 1
+
+while (val <= length(Loan_dat_train_x$House_Ownership)){
+  if(Loan_data_train$House_Ownership[val] == h_o[3,1]){
+    Loan_dat_train_x$House_Ownership[val] <- 2
+  } else if (Loan_data_train$House_Ownership[val] == h_o[1,1]){
+    Loan_dat_train_x$House_Ownership[val] <- 1
+  } else{
+    Loan_dat_train_x$House_Ownership[val] <- 0
+  }
+  val = val + 1 
+}
+
+val <- 1
+
+
+```
+  In here Unique values of Married.Single, Car_Ownership, and House_ownership features are encoded.
+One hot encoding on married.single and car ownership features applied, and label encoding is applied on house_ownership feature. 
+
+  In Married.Single, married == 1 and single is selected as 0. In Car_Ownership feature we selected owning a car as 1 and not owning as 0. Lastly on house_ownership label encoding is done as having a house is 2 renting is 1 and not having or renting a house is 0.
+  
+  I believe that now we can use our PCA model much better.
+  
+### Principal Component Analysis
+
+```{r, echo=TRUE}
+library("dplyr") 
+library("ggplot2")
+Loan_data_train_numeric<- Loan_dat_train_x %>% 
+  select(-c("Profession","CITY","STATE","Risk_Flag","Id"))
+
+Loan_data_train_numeric<- lapply(Loan_data_train_numeric,as.numeric)
+
+Loan_data_train_numeric <- data.frame(Loan_data_train_numeric)
+
+scaled.small <- scale(Loan_data_train_numeric)
+pca <- prcomp(scaled.small)
+
+# plot pc1 and pc2
+plot(pca$x[,1],pca$x[,2], main = "PC1 vs PC2", sub = "(pc of 1 and 2)",
+     xlab="pc1",ylab="pc2")
+
+screeplot(pca)
+```
+  
+  In the plot of pc1 vs pc2 we see the standardized data vary a lot between the scattered zone.
+  In the scree-plot we see that the variance is bigger than one for income principal component and that gives us the idea that it varies much and using mean is not useful for such component.
+  
+  Let's look at the pca variances from a point of view that is percent variation.
+
+```{r, echo=TRUE}
+
+
+## scree plot making
+pca.var <- pca$sdev^2
+pca.var.per <- round(pca.var/sum(pca.var)*100, 1)
+
+barplot(pca.var.per, main ="Scree Plot", xlab= "Principal Component", ylab = "Percent Variation")
+
+```
+
+  Here in the percent variation Scree Plot we see that pc1 is the most varying and its score is 20%.
+  
+  Let's also make multidimensional scaling analysis to compare and understand the data more.
+
+### Multidimensional Scaling
+
+```{r, echo=TRUE}
+library("dplyr")
+require(dplyr)
+require(MASS)
+Loan_data_train_mds_1 <- Loan_dat_train_x %>% 
+  dplyr::select(-c("Profession","CITY","STATE"))
+
+rownames(Loan_data_train_mds_1) = Loan_data_train_mds_1[,1]
+
+Loan_data_train_mds_1 = Loan_data_train_mds_1[,-1]
+
+# Fix non-numeric variables.
+Loan_data_train_mds_1$House_Ownership = as.numeric(Loan_data_train_mds_1$House_Ownership)
+Loan_data_train_mds_1$Car_Ownership = as.numeric(Loan_data_train_mds_1$Car_Ownership)
+Loan_data_train_mds_1$Married.Single = as.numeric(Loan_data_train_mds_1$Married.Single)
+str(Loan_data_train_mds_1)
+
+# Scale the data (standardize)
+scaled_Loan_data_train_mds_1 = scale(Loan_data_train_mds_1)
+
+dconfig <- dist(t(scaled_Loan_data_train_mds_1 ),method = "euclidean")
+
+``` 
+  For to make Classical (Metric) Multidimensional Scaling we needed to first make our data converted to matrix and then to the distance matrix which automatically forms a NxN square matrix. Any data between 5 and -5 shows 
+
+  Here we will analyze our training data with Kruskal's Non-metric Multidimensional Scaling and Sammon's Non-Linear Mapping for analyzing similarities and dissimilarities in the dataset features.
+
+```{r, echo=TRUE}
+library("dplyr")
+library(MASS)
+require(dplyr)
+require(MASS)
+
+
+Loan_data_train_mds_2 <- Loan_dat_train_x %>% 
+  dplyr::select(c("Id","Income","Age","Experience","Married.Single","House_Ownership","Car_Ownership","CURRENT_JOB_YRS","CURRENT_HOUSE_YRS","Risk_Flag"))
+
+rownames(Loan_data_train_mds_2) = Loan_data_train_mds_2[,1]
+
+Loan_data_train_mds_2 = Loan_data_train_mds_2[,-1]
+
+# Fix non-numeric variables.
+Loan_data_train_mds_2$House_Ownership = as.numeric(Loan_data_train_mds_2$House_Ownership)
+Loan_data_train_mds_2$Car_Ownership = as.numeric(Loan_data_train_mds_2$Car_Ownership)
+Loan_data_train_mds_2$Married.Single = as.numeric(Loan_data_train_mds_2$Married.Single)
+
+
+# Scale the data (standardize)
+scaled_Loan_data_train_mds_2 = scale(Loan_data_train_mds_2)
+
+dconfig_2 <- dist(t(scaled_Loan_data_train_mds_2),method = "euclidean")
+dconfig_2
+
+sammons <- sammon(dconfig_2, y = cmdscale(dconfig_2, 7), k = 7)
+
+
+kruskal <- isoMDS(dconfig_2,y = cmdscale(dconfig_2, 7), k = 7)
+
+```
+  Here, in the MDSPlot[3], we can see the locations and similarities of features of the dataset. Sammons shows stress which is our goal to minimize it. it is the minimization of the mappings error in distances. It can be made by gradient descent too. A desired stress level and points would be below 5 and in our 3D mapping both satisfy the condition for both kruskal and sammon. At 7D we achieve our desired results for standardized dataset.
+
+### Clustering
+
+#### Hierarchical Clustering
+
+  Hierarchical clustering is an alternative to the K-means clustering technique. It is used to group observations together. It also doesn't need pre-specified number of clusters as K-means requires. It can specify what distance metric to be used.
+  
+```{r, echo=TRUE}
+library("factoextra")
+library("dplyr")
+require(dplyr)
+
+clustering_train <- Loan_dat_train_x %>% 
+  dplyr::select(c("Id","Income","Age","Experience","Married.Single","House_Ownership","Car_Ownership","CURRENT_JOB_YRS","CURRENT_HOUSE_YRS","Risk_Flag"))
+
+# numeric adjustments
+rownames(clustering_train) = clustering_train[,1]
+
+clustering_train = clustering_train[,-1]
+
+str(clustering_train)
+# Fix non-numeric variables.
+clustering_train$House_Ownership = as.numeric(clustering_train$House_Ownership)
+clustering_train$Car_Ownership = as.numeric(clustering_train$Car_Ownership)
+clustering_train$Married.Single = as.numeric(clustering_train$Married.Single)
+
+str(clustering_train)
+
+# Scale the data (standardize)
+scaled_clustering_train = scale(clustering_train)
+
+#Distance metric
+dcluster <- dist(t(scaled_clustering_train),method = "euclidean")
+## it automatically converts to matrix.
+
+#clustering
+cluster <- hclust(dcluster, method = "average")
+cluster
+#Dendrogram
+plot(cluster)
+
+#Cutree but some printing errors occured.
+clusterCut <- cutree(cluster, 7)
+clusterCut
+```
+
+  Here we can see that in our hierarchical cluster, we have similar height but different clusters, which indicates that clusters that are similar to each other but different at some point.
+  Now,let's do a k-means clustering.
+
+#### K-means Clustering
+
+```{r, echo=TRUE}
+library("tibble")
+library("ggplot2")
+library("tidyverse")
+library("dplyr")
+library("stats")
+library("ggfortify")
+require(dplyr)
+k_means_train <- Loan_dat_train_x %>% 
+  dplyr::select(c("Id","Income","Age","Experience","Married.Single","House_Ownership","Car_Ownership","CURRENT_JOB_YRS","CURRENT_HOUSE_YRS","Risk_Flag"))
+
+rownames(k_means_train) = k_means_train[,1]
+
+k_means_train = k_means_train[,-1]
+
+str(k_means_train)
+# Fix non-numeric variables.
+k_means_train$House_Ownership = as.numeric(k_means_train$House_Ownership)
+k_means_train$Car_Ownership = as.numeric(k_means_train$Car_Ownership)
+k_means_train$Married.Single = as.numeric(k_means_train$Married.Single)
+
+str(k_means_train)
+
+# Scale the data (standardize)
+scaled_k_means_train = scale(k_means_train)
+
+# WSS Plot Function
+wssplot <- function(data, nc=15, seed =1234){
+  wss <- (nrow(data)-1)*sum(apply(data,2,var))
+  for(i in 2:nc){
+    set.seed(seed)
+    wss[i] <- sum(kmeans(data, centers = i) $withinss)
+  }
+  plot(1:nc, wss, type = "b",xlab="Number of Clusters", ylab= "Within groups sum of squares")
+}
+
+# Apply Wss plot
+wssplot(scaled_k_means_train)
+
+
+# K-Means Cluster
+k2 = kmeans(scaled_k_means_train[sample(nrow(scaled_k_means_train),250),], centers = 7, algorithm = "MacQueen")
+
+# Cluster Plot
+autoplot(k2,scaled_k_means_train[sample(nrow(scaled_k_means_train),250),],frame= TRUE)
+
+```
+  
+  WSS plot function helps us to see from the kink in the curve to choose optimum number of clusters needed to make from the data-set in k means clustering.
+  As it can be seen from the WSSplot, optimum number of clusters equals to 7. Not huge difference hence clusters may look not that different.
+  
+  Let's make further analysis to centers of the kmeans for all columns.
+  
+```{r, echo=TRUE}
+# K-means center analysis
+k2$centers
+```
+  One can see that after standardization other than house ownership feature, features have different values that can be said as distinctly different (but not so much) from each other. Hence 7 cluster may seem like a nice fit to this data set. Still it seems that they are overlapping each other, but from centers one can see that for each data set they have different centers for each feature. Most significant differences are in income, age, current_house_yrs and current job years, hence seen different is not big, and clusters  are seen as not that differerent from each other. Which suggests these clusters that we found by optimum analysis and then after the clustering gives us the result of these clusters are not distinct in nature.[8]
+
+### Clustering Validation
+  
+  First of all, one must know that there are 3 types of validation of clusters. 1. External Indexes, 2. Internal Indexes, 3. Relative Indexes
+  
+The first one can be used only if the clusters have labels that we can use.
+
+  We will first start with External Indexes to our validations.
+
+#### External Validation
+  
+```{r, echo=TRUE}
+library("ClusterR")
+Risk_Flags = k_means_train$Risk_Flag[sample(nrow(k_means_train),250)]
+external_rand_result_kmeans = external_validation(Risk_Flags,k2$cluster,method = "adjusted_rand_index",
+                                                  summary_stats = TRUE)
+
+
+```
+  Here, from the external validation of the clusters one can deduce that, whether the clusters are correctly collected the values as indicated in the system [9]. 
+  
+#### Internal Validation
+
+  Now let's continue with second, Internal indexes,
+
+```{r, echo=TRUE}
+library("cluster")
+library("factoextra")
+km.res <- eclust(scaled_k_means_train[sample(nrow(scaled_k_means_train),250),], "kmeans", k = 7, nstart = 25, graph = FALSE)
+fviz_silhouette(km.res, palette = "jco",
+ggtheme = theme_classic())
+
+# Silhouette information
+silinfo <- km.res$silinfo
+names(silinfo)
+
+
+# Silhouette widths of each observation
+head(silinfo$widths[, 1:3], 10)
+
+
+# Average silhouette width of each cluster
+silinfo$clus.avg.widths
+
+# The total average (mean of all individual silhouette widths)
+silinfo$avg.width
+
+# The size of each clusters
+km.res$size
+
+# Silhouette width of observation
+sil <- km.res$silinfo$widths[, 1:3]
+# Objects with negative silhouette
+neg_sil_index <- which(sil[, 'sil_width'] < 0)
+sil[neg_sil_index, , drop = FALSE]
+
+# Dunn index and others
+library("clValid")
+
+clmethods <- c("hierarchical", "kmeans")
+internals <- clValid(scaled_clustering_train[sample(nrow(scaled_clustering_train),250),], nClust = 2:7,
+                     clMethods = clmethods,
+                     validation = "internal")
+
+```
+
+Here we used Silhouette index and the index gives us a score in between 1 and 0. 1 means the dataset is well clustered, contrary 0 means there might be clusters that are unnecessary for the dataset. We can also get -1 which means dataset can be misclassified. Average Silhouette width is 0.15, hence close to 0, which indicates that dataset is clustered with too many clusters [10] [14].
+
+
+  Finally, end validation techniques with Relative indexes.
+  
+#### Relative Index Validation
+  
+```{r, echo=TRUE}
+library("clv")
+
+# cluster data
+agnes.mod <- agnes(scaled_clustering_train[sample(nrow(scaled_clustering_train),250),]) # create cluster tree 
+v.pred <- as.integer(cutree(agnes.mod,5)) # "cut" the tree 
+
+intraclust = c("complete","average","centroid")
+interclust = c("single", "complete", "average","centroid", "aveToCent", "hausdorff")
+
+# compute intercluster distances and intracluster diameters
+cls.scatt <- cls.scatt.data(scaled_clustering_train[sample(nrow(scaled_clustering_train),250),], v.pred, dist="manhattan")
+
+# once computed values use in both functions
+dunn1 <- clv.Dunn(cls.scatt, intraclust, interclust)
+davies1 <- clv.Davies.Bouldin(cls.scatt, intraclust, interclust)
+
+
+```
+ 
+ Davies in its nature, by the conditions it needs measures how good a clustering scheme is. R_{i,j} needs to be equal or above 0. R_{i,j} == R_{j,i}
+and so. Hence at the end, satisfying system will have a low value in davies score which indicates better separation of the clusters and "tightness" of the intracluster.
+  
+  
+## Results
+
+  Here are the end results for to make things more clear.
+  First Kruskal's non-metric MDS [5].
+
+```{r, echo=TRUE}
+
+kruskal # For isoMDS Kruskals nonmetric MDS.
+
+MDSPlot <- function(X)
+{
+  
+  #creates an appropriate plot from an MDS object
+  x = X$points[,1]
+  y = X$points[,2]
+  plot(X$points, pch=20, col = "purple",
+       xlab = "First Dimension", xaxt ="n",
+       ylab = "Second Dimension", yaxt = "n",
+       main = "Perceptual Map for Loans", xlim= c(min(x)-5*sd(x),max(x)+.5*sd(x)),ylim = c(min(y)-5*sd(y),max(y)+5*sd(y)))
+  text(X$points, labels = dimnames(X$points)[[1]],pos = c(1,2,3,4),cex =.75,col = c("black","blue","green","red"))
+}
+
+MDSPlot(kruskal)
+
+```
+  Here one can see that Kruskal test result is 0.2565442, but with isoMDS it is already multiplied by 100 so we can assume that this dimension is nearly perfect fit [7]
+  Second we have Sammon's Non-Linear Mapping [4].
+  
+```{r, echo = TRUE}
+sammons # For sammon Sammons nonmetric MDS.
+sammons$stress
+```
+  According to University of Cambridge (Cognition and Brain Sciences Unit) Stress level x 100 which is actually seen in R isoMDS, sammon etc, shows goodness of fit in multidimensional scaling (MDS). The dissimilarity matrix with distance matrix is observed than put into MDS methods. We get really great end results showing 7D mapping is great for this data-set[7].
+
+  Here lastly Classical (Metric) Multidimensional Scaling which is actually Principal Coordinates Analysis (as mentioned in stats) [2].  
+```{r, echo = TRUE}
+# find the MDS solution
+
+metric_mds = cmdscale(dconfig, k= 1) # look for different dimensions
+metric_mds
+
+metric_mds = cmdscale(dconfig,k=2) # look for different dimensions
+metric_mds
+
+metric_mds = cmdscale(dconfig, k=7) # seems best fitting dimension.
+metric_mds
+
+```
+
+### External Validation Result (Assumed labels exist)
+
+  Here, we see external adjusted rand validation result for kmeans.
+  
+```{r,echo=TRUE}
+# Summary of external
+
+external_rand_result_kmeans
+
+```
+
+  Value of external validation, which is closer to 0 indicates that no pair is classified in the same way under both clusterings. This might be not that accurate since label is only assumed. Internal and Relative Validation Measurements and External Measurement F result, etc. are better representers of the clustering validation.
+
+### Internal and Relative Validation Results (Most important)
+
+  Here, we see internal and relative validation results for hierarchical and kmeans.
+
+```{r,echo=TRUE}
+# Summary
+summary(internals)
+silinfo$avg.width
+
+# another approach to dunn1 and dav
+dunn1
+davies1
+
+```
+ In here we can see best method to use between k-means, and hierarchical, Connectivity, Dunn, Silhouette, Davies results and Average width of  Silhouette. These results are shown for both hierarchical and k-means and from k = 2 to k = 7 clusters [13].
+
+
+## Analysis and Evaluation of Results, and Discussion
+
+  Before writing anything about the analysis and evaluation of the results, one needs to know how to determine the appropriate minimum dimensions to map the data is about for sammon's dissimilarity measures that are in between 5 and -5 and for its stress below 5 in our case its 0.001866996 which is great. For regular classic metric mds the values that pop-up needs to be in between 10 for some but mostly as usual between 5 and -5. Also in classic metric scaling negative results indicate that original distances as we picked euclidean, they are not Euclidean. 
+
+  By analyzing our PCA and MDS analysis results, from all MDS models tried (Kruskal, Sammon, and Classic Metric) numeric features that are one-hot and label coded one can think of this dataset can be thought as a dataset that can be mapped to two dimensions without not many meaningful data loss. Also from the PCA which has more features and observations available due to not needing a square matrix, shows us the variance across the features and gives us the result that income is the most varying feature of the dataset with 20%. 
+  
+  What more can be thought of the data to be exploring the dataset with other types of comparison techniques in the future, since PCA is an exploratory tool that shows and involves observations on n-numeric variables that define pn-dimensional vectors that if there are p entities. With that we find eigenvectors and eigenvalues that help us to understand the matrix of the dataset. One can get more meaningful information of the covariance matrix of the dataset.
+  
+  One can use a MPCA technique and look for it's measures to understand, which now that I don't know whether will it work. Least squares and maximum likelihoods of each features than make another comparison with the techniques used. Lastly, I want to add that label encoding and one-hot encoding may made the data lose some of its meaning, also not being able to use some features due to not label encoding the states and city variables.
+  
+  In the clustering part, both hierarchical and k-means clustering which are standardized, shows that data set has slightly different features when standardized. Some big differences can be seen in the dendogram of hierarchical clustering. We understood that 7D mapping is a great fit for the dataset since much of the features are necessary to understand the risk flag behaviour.
+  
+  Our Clustering Validations in general, all of them(Relative, Internal, External) shows what we assumed from the linearly decreasing elbow in K-means analysis, actually non-scaled elbow at K=2 clusters mostly better for clustering. Silhouette gives us really low width scores which indicate clusters are not well clustered, and actually our scores indicate that sample could be assigned to another closest cluster. In the Relative part for Dunn, and Davies (Mostly Davies) indicates that clusters are not tightly bound inside, and not well separated from each other.External part from it's score that is close to 0 shows that pairs are actually classified somewhat randomly since R = Correct classification/all-elements. 
+  
+  One can discuss that how well these clustering methods for this dataset is defined. Is this data fit to clustering or any other unsupervised learning methods. These topics can be discussed in further talks.
+  
+
+## Conclusion
+
+  We, by the conducted preliminary analysis of the "Univ.Ai" data-set on "Loan Prediction Based on Customer Behavior", learned about the observation-training size, different features that is used in the case to analyze risk to whether give bank loan to a person on the test-sample or not, with various characteristics of the features given in the data-set.
+
+  Later on, by the principal component analysis(PCA) and multidimensional scaling (MDS), we learned about similarities, variation, co-variation, variability, dissimilarities of the data. Also which dimension of the scaling is a nice fit to the numeric variables of the dataset.
+  
+  In the clustering part we know learned that clustering can show us which features can be represented in same cluster, which cannot. as from the previous parts, how much the features differ from each other. K-means also shows the sum of squares and centroids which are good to indicate how much differentiation occurs in each cluster.
+  
+  From the validation part one can interpret that the data is overclustered with k = 7, and clustering approach that is used in the data even the best method given from the clValid shows us that even that doesn't separate the data well for scaled dataset. [11] [12]
+
+  As conclusion, we can deduce that there is not a big risk flag gap for elderly and youth, and also to add to the conclusion categorical Data that the ones that can be encoded to become numeric data must be encoded and the data and feature loss should be mentioned.
+
+## References
+
+[1] Subham Surana, "Loan Prediction Based on Customer Behavior."Aug. 2021, Accessed: Nov. 3, 2021. [Online]. Available: https://www.kaggle.com/subhamjain/loan-prediction-based-on-customer-behavior/metadata
+
+[2]https://stat.ethz.ch/R-manual/R-patched/library/stats/html/cmdscale.html
+
+[3]Peter Rossi, "MDS in R" May. 2013, Accessed: Nov. 23, 2021. [Video]. Available: https://www.youtube.com/watch?v=cwE-zx3goBo
+
+[4]https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/sammon.html
+
+[5]https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/isoMDS.html
+
+[6]Josh Starmer, "StatQuest: PCA in R" Nov. 2017, Accessed: Nov. 23, 2021. [Video] https://www.youtube.com/watch?v=0Jp4gsfOLMs
+
+[7]https://imaging.mrc-cbu.cam.ac.uk/statswiki/FAQ/mds/stress
+
+[8]https://www.youtube.com/watch?v=KmYUE7Of5rU
+
+[9]https://search.r-project.org/CRAN/refmans/clv/html/Davies_Bouldin.html
+
+[10]http://www.sthda.com/english/wiki/wiki.php?id_contents=7952#silhouette-analysis
+
+[11]https://www.listendata.com/2016/01/validate-cluster-analysis.html
+
+[12]https://www.datanovia.com/en/lessons/cluster-validation-statistics-must-know-methods/
+
+[13] https://www.youtube.com/watch?v=_KKT55JohcU
+
+[14] https://www.youtube.com/watch?v=_b87tfU4vKM
