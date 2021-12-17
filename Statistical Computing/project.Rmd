@@ -7,11 +7,11 @@ header-includes:
 description: | 
   An introductory level statistical analysis project by Group Zencefil (20). 
 author: 
-  - "2355170 - Abdullah Burkan Bereketoglu"
-  - "2361244 - Eren Durali "
-  - "2429363 - Fatma Ulasti"
-  - "2468825 - Ozmen Cilesiz"
-  - "2429330 - Yusuf Turan "
+  - "Abdullah Burkan Bereketoglu"
+  - "Eren Durali "
+  - "Fatma Ulasti"
+  - "Ozmen Cilesiz"
+  - "Yusuf Turan "
 date: "12/12/2021"
 mainfont: Times New Roman
 fontsize: 12pt
