@@ -1,0 +1,541 @@
+---
+title: "Project Zencefil"
+header-includes:
+- \usepackage{titling}
+- \pretitle{\begin{center}\LARGE\includegraphics[width=6cm, height = 8cm]{"C:/Users/Wilkins Inc/OneDrive/Desktop/odtu.jpg"}\\[\bigskipamount]}
+- \posttitle{\end{center}}
+description: | 
+  An introductory level statistical analysis project by Group Zencefil (20). 
+author: 
+  - "2355170 - Abdullah Burkan Bereketoglu"
+  - "2361244 - Eren Durali "
+  - "2429363 - Fatma Ulasti"
+  - "2468825 - Ozmen Cilesiz"
+  - "2429330 - Yusuf Turan "
+date: "12/12/2021"
+mainfont: Times New Roman
+fontsize: 12pt
+documentclass: report
+abstract: |
+  In this project, we as a group analyzed a dataset called Abalone, which is not previously look at in the STAT291 lectures and recitations. Feature types, head, tail analysis and statistical measurements are done in the analysis.
+  Enjoy!!
+output:
+  pdf_document:
+    fig_caption: true
+    toc: yes
+    toc_depth: '3'
+    latex_engine: xelatex
+    highlight: tango
+---
+
+```{r setup, echo=FALSE}
+#tinytex::install_tinytex()
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+# Introduction
+
+  Group Zencefil Welcomes you!!!
+
+```{r, echo=FALSE,out.width="25%",out.height="20%",fig.cap="Images of Group Members- Burkan, Yusuf, Fatma, Özmen, Eren(Left-Up to Right-Down)",fig.show='hold',fig.align='center'}
+
+knitr::include_graphics(c("E:/Tubitak/Abdullah_Burkan-Bereketoglu_ChE204-2020Fall.jpg","C:/Users/Wilkins Inc/OneDrive/Desktop/Yusuf_Turan.jpeg","C:/Users/Wilkins Inc/OneDrive/Desktop/Fatma_Ulasti.jpeg","C:/Users/Wilkins Inc/OneDrive/Desktop/Ozmen_Cilesiz.jpeg","C:/Users/Wilkins Inc/OneDrive/Desktop/Eren_Durali.jpeg"))
+
+```
+
+  In this project our, the Group Zencefil's, aim was to locate a data-set, measure its statistical properties, analyze it's features(variables), in a basic manner, in each question there are steps completed for to accomplish this goal.  
+
+# Question 1
+
+  In the first question, we will locate a package that is not used in the class. We used AppliedPredictiveModeling package and it's Abalone dataset. To check whether it has at least two numeric and at least one categoric we will look at the class of features, by str function. Data is from CRAN (Comprehensive R Archive Network)
+
+```{r, echo = TRUE, warning=FALSE}
+
+#install.packages("AppliedPredictiveModeling")
+library("AppliedPredictiveModeling")
+data("abalone")
+
+str(abalone)
+head(abalone)
+```
+
+
+## Questions 1.1 (Brief Description of the data)
+  The data-set consists of data from 4177 Abalones. The dataset includes various types of measurements, such as; type of abalones (Male, Female, infant), height, longest Shell, diameter, rings, and various weight measures. The Abalone data-set has only 1 categorical variable (M,F,I), still passes the minimum threshold of 1 categorical, 2 numeric features(variables) requirement. Data-set mainly describes different Abalones with their different selected measures.
+
+
+# Question 2
+
+```{r, echo=TRUE}
+library("AppliedPredictiveModeling")
+data("abalone")
+class(abalone)
+
+# or 
+
+is.data.frame(abalone)
+```
+
+  Hence, here we can see that our data-set Abalone is indeed in the form of a data.frame .
+  
+# Question 3
+
+  Here we need to ask two indexing questions, and answer them with the proper code, also one must answer it in dataframe.
+
+## Question 3.1
+  Get the 465th element from Diameter feature(variable)
+  
+```{r, echo = TRUE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+abalone$Diameter[465]
+# or
+abalone[465, 3]
+# or 
+abalone[465,which(colnames(abalone) == "Diameter")] # If you don't know which column has the feature Diameter, this is the best way approach.
+```
+
+## Question 3.2
+  Get the 2987th element of data-set Type variable(feature)
+
+```{r, echo = TRUE, warning = FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+abalone$Type[2987]
+# or 
+abalone[2987, 1]
+# or
+abalone[2987,which(colnames(abalone) == "Type")] # If you don't know which column has the feature Type, this is the best way approach.
+```
+
+# Question 4
+  In this question we will first, show if there is NA value in the data-set and count them for each column. Later we will continue with showing names of variables in our data-set. If the data-set doesn't have names for the features given, we need to give them names, hence we have names we will only show them.
+  
+  In the third part of the question we create a new data frame called short_data with 10 rows from the head and 10 rows from the tail of the data. Continuing with showing mean, sd, median, and mode of the numeric features of the data-set, and contingency tables for some of our categorical variables/features in the data-set.
+  
+## Question 4.1
+
+  Here is the part that, we show each column and their count of NA.
+  
+```{r, echo=TRUE,warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+
+i <- 1
+while(i <= length(colnames(abalone))){
+  print(sum(is.na(abalone[,i])))
+  i = i + 1
+}
+
+i <- 1
+
+# or 
+
+anyNA(abalone) #our data frame has no NA value but this is not looking for each column on column basis.
+
+```
+
+  From the results printed we can see that there is no NA value in any of our columns/variables. The method with while by just printing is not the most sufficient way, but for data-sets with features less than 20 it can be used fine since there won't be much uneasiness for the eyes of the viewer when looking at thousands of zeros, but just 20 or less.
+  
+## Question 4.2
+
+  Here is the part that we continue with variable names, this has an easy function that works.
+  
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+colnames(abalone)
+
+```
+
+## Question 4.3
+
+  Here we created the new data frame called short_data from head and tail part of the dataset by binding with row bind, with 10 from each taken (head and tail). 
+
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+
+short_data <- rbind(head(abalone, n = 10),tail(abalone, n = 10))
+short_data
+
+```
+
+## Question 4.4
+
+  Here we solved the question of mean, median, standard deviation, contingency table, and mode of the data-set.
+ 
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+mean = c()
+median = c()
+sd = c()
+columnNames = c()
+
+
+cout <- 1
+
+while(cout <= length(colnames(abalone))){
+  if (is.numeric(abalone[,cout])){
+    columnNames = c(columnNames, names(abalone[cout]))
+  }
+  cout = cout + 1
+}
+
+cout <- 1
+
+while(cout <= length(colnames(abalone))){
+  if (is.numeric(abalone[,cout])){
+    mean = c(mean, mean(abalone[,cout]))
+    median = c(median, median(abalone[,cout]))
+    sd = c(sd, sd(abalone[,cout]))
+  }
+  cout = cout + 1
+}
+
+cout <- 1
+
+```
+
+### Question 4.4.1
+
+  Here we see, mean for each column with its name and their value.
+
+```{r, echo=TRUE, warning=FALSE}
+mean = rbind(columnNames, mean)
+mean
+```
+
+### Question 4.4.2
+
+  Here we see, median for each column with its name and their value.
+
+```{r, echo=TRUE, warning=FALSE}
+median = rbind(columnNames,median)
+median
+```
+
+### Question 4.4.3
+
+  Here we see, standard deviation for each column with its name and their value.
+
+```{r, echo=TRUE, warning=FALSE}
+sd = rbind(columnNames,sd)
+sd
+```
+
+
+### Question 4.4.4
+
+  Here we see, mode for each column with its name and their value.
+
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+mode = c()
+
+getMode <- function(x) {
+  unique <- unique(x)
+  modes <- tabulate(match(x, unique))
+  unique[modes == max(modes)]
+}
+
+cout <- 1
+while(cout <= length(columnNames)){
+  if (is.numeric(abalone[,cout])){
+    mode = c(mode, getMode(abalone[,cout]))
+  }
+  cout = cout + 1
+}
+cout <- 1
+
+mode = rbind(columnNames, mode)
+
+mode
+```
+
+### Question 4.4.5
+  
+  Here we find the contingency table, but there is one important thing to say about this. Since we only had one categorical variable in our data-set, we just for this question added one more feature which is a categorical variable to make a 3x3 contingency table.
+
+```{r, echo=TRUE, warning=FALSE}
+
+separate <- 1
+
+colors_variable <- c("red", "green", "blue")
+ColorList = c()
+
+while(separate <= length(abalone[,1])){
+  ColorList = c(ColorList, rep(sample(colors_variable, 1)))
+  separate = separate + 1
+}
+
+q_4_4_5 <- cbind(abalone,ColorList)
+
+contingency_table <- table(q_4_4_5$ColorList, q_4_4_5$Type)
+percent_contingency_table <- prop.table(table(q_4_4_5$ColorList, q_4_4_5$Type)) # gives ratios in 0 and 1. Hence percents
+
+contingency_table
+percent_contingency_table  # gives ratios in 0 and 1. Hence percents of contingency table is shown. E.g 0.1 Infant Red Abalone .
+
+rowSums(contingency_table)
+rowSums(percent_contingency_table)
+
+colSums(contingency_table)
+colSums(percent_contingency_table)
+
+```
+
+  One can see from the percent contingency table that the percentage in the observations, that a Red Infant Abalone, or Blue Female Abalone.
+  
+## Question 4.5
+
+  Here we order, hence sort our data-set with one of the variables/features in our data frame. We picked height feature and showed decreasing and increasing sorting for this variable.
+  
+  
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+str(abalone) # I pick Height from features.
+
+head(abalone[order(abalone$Height,decreasing = TRUE),],n = 5) # descending height order sorting for all data-set.
+head(abalone[order(abalone$Height),],n = 5) # Ascending height order sorting for all data-set.
+
+```
+  
+# Question 5
+
+  Here we firstly make a linear combination of two or more of our numeric variables with our group name, which we picked as Zencefil. Later we will append it to our dataset for the next part, in the next part we will use loops and multiply one of our features/variables with another one element by element.
+
+## Question 5.1
+
+  Here we make the linear combination, and save this as a new column in our data-set. We assumed a cylindrical (without taking square) Abalone, and this variable is named as Zencefil.
+
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+abalone_for_q_5 <- abalone
+
+Zencefil = c()
+values <- 1
+
+while(values <= length(abalone$Height)){
+  Zencefil = c(Zencefil, abalone$Height[values]*(abalone$Diameter[values]/2)*pi)
+  values = values +1
+}
+
+abalone_for_q_5 <- cbind(abalone_for_q_5,Zencefil)
+head(abalone_for_q_5, n = 1)
+```
+  
+## Question 5.2
+
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+multiplication = c()
+
+for(i in 1:length(abalone$ShuckedWeight)){
+ multiplication = c(multiplication, abalone$ShuckedWeight[i] * abalone$VisceraWeight[i])
+}
+
+head(multiplication)
+length(multiplication)
+
+```
+  
+# Question 6
+
+  Here we create a new vector that only includes values from one of our numeric variables in abalone data-set, and these values are only the ones that are greater than the median of that feature. We again used Height variable for to create this new vector. The median of the height variable is 0.14 .
+
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+abalone <- abalone_for_q_5
+
+mynewvector <- abalone$Height[which(abalone$Height > median(abalone$Height))]
+head(mynewvector, n = 10)
+
+min(mynewvector) > median(abalone$Height)
+
+```
+
+  Here from the minimum and median comparison, we return TRUE, hence we can say that we did the code right.
+
+# Question 7
+
+  Here we appended a new categorical variable by comparing two of the numeric variables in our data set. We compared whether they are equal, left of the comparison larger (Big), or smaller (Small). We compared VisceraWeight with ShellWeight since comparison in same dimensions make logical comparison table.
+
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+abalone <- abalone_for_q_5
+  
+mynewcat = c()
+for (i in 1:length(abalone$LongestShell)){
+  if(abalone$VisceraWeight[i]>abalone$ShellWeight[i]){
+    mynewcat = c(mynewcat,"Big")
+  }else if(abalone$VisceraWeight[i]<abalone$ShellWeight[i]){
+    mynewcat = c(mynewcat,"Small") 
+  }else{
+    mynewcat = c(mynewcat,"Equal")
+  }
+}
+length(mynewcat[which(mynewcat == "Equal")])
+length(mynewcat[which(mynewcat == "Small")])
+length(mynewcat[which(mynewcat == "Big")])
+
+```
+
+  Here from the analysis one can see that most of the time Viscera Weight of Abalones are smaller than Shell Weights of the Abalones. 
+  
+# Question 8
+
+  Here in this question, we convert our data frame into a list, for that we use as.list rather than list since list accepts many items and as.list accepts only x variable, hence ignores any y and z as they are seen as not used arguments and coerces x argument to a list. e.g as.list(df) is df == list of df. df[1] = df-feature_one, df[2] == df -feature_two
+  
+  On the other hand, list() accepts many arguments and builds a list on them, therefore will only make a list onto the data frame i.e list(df) = a list onto data frame e.g list_of_df[[1]] == df.
+
+
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+abalone <- abalone_for_q_5
+
+abalone_ls <- as.list(abalone)
+
+
+### Question Answer for this part
+
+sapply(as.list(abalone),class)
+# One line code for showing the class of each member of the list
+```
+
+  the sapply function shows the one line code for the class of each member of our list from our data set.
+  
+# Question 9
+
+  Here we selected our list elements by their names, we made a list from the data frame that the previous part.
+
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+names(abalone_ls)
+
+#Here the examples.
+abalone_ls[["LongestShell"]][7]
+abalone_ls[["Diameter"]][9]
+abalone_ls[["Height"]][16]
+abalone_ls[["WholeWeight"]][65]
+abalone_ls[["ShuckedWeight"]][103]
+abalone_ls[["VisceraWeight"]][245]
+abalone_ls[["ShellWeight"]][306]
+abalone_ls[["Rings"]][486]
+
+```
+
+# Question 10
+
+  Here we will show the greatest values in the numeric variables in our list, and their place in our list as with their number and with their variable name.
+
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+counter <- 1
+
+while(counter <= length(names(abalone))){
+  if(is.numeric(abalone_ls[[names(abalone_ls)[counter]]])){
+    cat("My ", counter, " variable name is ",
+        names(abalone_ls)[counter],
+        " and the greatest value for my vector is ",
+        max(abalone_ls[[names(abalone_ls)[counter]]]),
+        "\n")
+  }
+  counter = counter + 1
+} 
+
+counter <- 1
+
+```
+
+# Question 11
+
+  Here we will show the most frequent item in the categorical variables in our list, and their place in our list as with their number and with their variable name.
+
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+counter <- 1
+
+while(counter <= length(names(abalone))){
+  if(!is.numeric(abalone_ls[[names(abalone_ls)[counter]]])){
+    cat("My ", counter, " variable name is ",
+        names(abalone_ls)[counter],
+        " and the most frequent item for my vector is ",
+        names(which.max(table(abalone_ls[[names(abalone_ls)[counter]]]))),
+        "\n")
+  }
+  counter = counter + 1
+} 
+
+counter <- 1
+
+```
+
+# Question 12
+
+  Here we will randomly, make one of the list elements Null valued hence all the values will be removed from our list.
+  
+```{r, echo=TRUE, warning=FALSE}
+library("AppliedPredictiveModeling")
+data("abalone")
+
+abalone_ls[[sample(names(abalone_ls),1)]] <- NULL
+
+length(colnames(abalone))
+length(names(abalone_ls))
+
+```
+
+  Normally after adding the group named variable we had 10 features in our system. But now we have 9, therefore we can deduce that one of them is now Null.
+
+# Question 13
+  
+  At last, here we remove everything from our environment, then collect garbage and empty it with gc() for prevent overload. Lastly, we will show our directory of work. 
+
+```{r, echo=TRUE, warning=FALSE}
+rm(list=ls())
+gc()
+
+getwd()
+
+```
+
+Here we now end our great project Zencefil. Zencefil Group, Thanks for such an opportunity to work together and appreciate each other's talent and give support.
+
+The End.
+
+Sincerely Yours,
+Zencefil Group
+
+
+
