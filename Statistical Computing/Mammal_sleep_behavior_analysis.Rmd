@@ -1,0 +1,396 @@
+---
+title: "Mammal Sleep Behavior Analysis"
+header-includes:
+- \usepackage{titling}
+- \posttitle{\end{center}}
+- \pretitle{\begin{center}\LARGE\includegraphics[width=6cm, height = 8cm]{"C:/Users/Wilkins Inc/OneDrive/Desktop/odtu.jpg"}\\[\bigskipamount]}
+author: 
+  - "2355170 - Abdullah Burkan Bereketoglu"
+  - "2502490 - Ismail Cagan Yilmaz"
+  - "2428852 - Sena Gulizar Aktas"
+  - "2429330 - Yusuf Turan"
+  - "2290831 - Zeynep Oz"
+date: "1/30/2022"
+mainfont: Times New Roman
+fontsize: 12pt
+documentclass: report
+abstract: |
+  In this project, we as group_10 analyzed a dataset called Msleep in short, which is Mammal Sleep Behavior Data Set. In this data set, sleep patterns are given with body weight, brain weight, conservation type, genus, order and -vore type that can be said that has effects on the sleeping patterns of the mammals. Sleep patterns in between -vores and other features are analyzed to understand if there exist a pattern at all. These traits then analyzed to find a statistical significance of sleep pattern with different statistical metrics and perspectives, such as linearity testing, mean significance by t-test,  correlation analysis, linear regression and variance analysis. Results indicate that there are some significant dependencies between body~brain weight to sleep, furthermore domestication has an effect, but -vore effect is not significant. 
+linestretch: 1.5
+output:
+  pdf_document:
+    fig_caption: true
+    toc: yes
+    toc_depth: '3'
+    latex_engine: xelatex
+    highlight: tango
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+    theme: united
+    highlight: tango
+indent: true
+---
+
+```{r setup, include=FALSE}
+#tinytex::install_tinytex()
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+  
+  In our analysis, we wanted to find a significance of sleep time between different mammal types by looking at several given features of these mammals. By that we wanted to point out the fact that different features that occur on different mammals can change their sleep patterns. To be able to make this analysis we used five different methods and pointed out different features effects on the sleep time of the mammal[1-2]. The metadata that is taken for the data set is from Wikipedia as provider Vincent Arel Bundock mentioned in his website[1-2].
+
+## Data Description
+  
+  In the data set, [Mammal Sleep Behavior Data](https://vincentarelbundock.github.io/Rdatasets/articles/data.html), we have eleven features, except ID,  which are; name, genus, -vore, order, conservation type, sleep total, sleep rem, sleep cycle, awake time, brain weight, body weight. Let's look at their descriptions. In the appendices Table-1 there is full description of each data variable with their definitions[2].
+
+  To be able to describe the properties that is in Table-1, since [Mammal Sleep Behavior Data](https://vincentarelbundock.github.io/Rdatasets/articles/data.html) consisted many NA values, we first needed to omit them or remove them from the data set. Each variable had NA values at different rows, so one needed to omit NA's for each different analysis they were going to conduct.
+
+
+## Research Questions
+
+  We followed certain questions came to our minds to understand the data set in the direction that we desired to follow. And these questions can be seen in the Table-2 in appendices.
+
+  By answering these questions we planned on achieveing our aim of the study which we will elaborate in the next part of the study.
+
+## Aim of the Study
+
+  The overall goal for this study conducted is to see if there is a dependency or correlation of two or more features such as weight, conservation is on effect of the sleep time of mammals. From that we wanted to achieve if there is a statistical significance, then further studies on the case can be conducted to further improve mammal sleep quality, since it is directly correlated with sleep time[3].
+
+# Methodology/Analysis
+  
+  In our study of [Mammal Sleep Behavior Data](https://vincentarelbundock.github.io/Rdatasets/articles/data.html), we used five different approaches on the data set on various features such as body weight, brain weight, conservation, - vore type and analyzed their relation and dependency with sleep time, rem sleep time. 
+  
+  First method that is applied is to check the linearity of the brain weight versus the total sleep time the applied linearity test is QQ Plot which finds linear relationship and visually interprets it, we used QQ method to determine whether a data collection is likely to come from a theoretical distribution, such as normal or exponential[4]. E.g, if we are conducting a statistical study and assume that our dependent variable is normally distributed, we can use a normal QQ chart to validate that assumption[4]. This method is just visual inspection, not fool-proof proof, hence little subjective[4]. However, it allows us to quickly determine if our assumption is credible, and if not, how the assumption is broken and what data points contribute to each breach[4]. Lastly, a scatterplot generated by plotting two sets of quantiles against each other which is the Q-Q plot that is mentioned above[4]. If both sets of quantiles come from the same distribution, the points should form a relatively straight line[4].
+  
+  Second method is two-tail t-test and mean comparison of brain weights of Carnivore and Omnivore Mammals to see if there a significant difference between their means[4]. This method is used to firstly visualize the means of two -vores by boxplot and their outliers, later on comparing the means by t-test, to see if there is a significant difference between the brain weights then from that if there exist a difference we can look for a dependency of sleep time to brain weight[5-6]. By this test we wanted to test the general hypothesis that a significantly smart animal which is omnivore, eventually has a bigger brain and omnivore animals are more developed than carnivore animals, from the result we can also reject or support this hypothesis[6].
+  
+  Third method that is used is the correlation, and by that we wanted to achieve to find a correlation between body weight and total sleep time of each mammal. If there is such relationship, then we could investigate on how body weight affects the total sleep of each animal[7].
+  
+  Fourth method that is used is linear modelling on animal's eating behaviors and the corresponding body weights to make a further estimation, if there exist a significant relation that is given as result of the linear model[8-9]. Basically after the correlation, to further investigate and find a predictive function if there is strong enough statistical significance of this effect.
+  
+  Fifth, and last variance analysis method is applied on the total sleep time ~ -vore types, and total sleep time ~ conservation. This method is conducted to analyze whether there are clustered zones that show low variance for different types of conservation and -vores[10]. By that we can see that for some -vores there indeed visible evidence that -vore type or conservation type is effective on the sleep time of the mammal[10].
+  
+# Results and Findings
+
+  In our linearity test, please refer to Table-2 in appendices, we found out that as it can be also seen from the Figure-2 in appendices, that on the tails of the Q-Q plot dots are showing a significantly non-linear behavior, hence they are not on the straight line. Therefore, it can be deduced that this distribution does not show a normal distribution. Since the points do not form a linearity on the line, it can be said that there is no linear relationship between the total sleep of mammals and their brain weight.On the other hand, if there existed a linear relationship that is visible on the plot, the degree of the relationship can be checked by looking at the Pearson correlation coefficient.
+
+  For the second question, as it can be seen from the Figure - 3, we used a boxplot to visualize the means of omnivore and carnivore and later on in the Table - 3 applied a two-tail t-test to test our hypothesis. For two-sided test, our H0(null hypothesis) is that the means of the brain weight of carnivore and omnivore animals are equal and our HA(Alternative hypothesis, omnivore with bigger brains.) is that the means of the brain weight of carnivore and omnivore animals are not equal which means that there is a significant difference[6]. We implemented the two-sided test with 95% confidence interval and found that our p-value (0.4473) is greater than our significance value (0.05) and concluded that H0 can not be rejected. With this, we can not claim that there is a significant difference between the brain weights of carnivore and omnivore animals and we can eventually reject the general opinion[6].
+  
+  For our third question we wanted to answer, whether there is a significant relationship between the animals' total sleep time and their body weight. For this, we performed a correlation test, and we observed that the p value we found was smaller than the significance level[7]. For the results please check Table - 4. In this way, we realized that we could reject the null hypothesis and, as a result, there was a relationship between body weight and total sleep[7]. The correlation coefficient we found is -0.46, which means that there is a negative relationship between the two variables[7]. For the visual result please refer to Figure - 4 (In discussion add can we really say 0.46 correlation high?)
+
+  For the fourth question two sub-questions answered. First one "Is there any relationship between Brain weight and rem sleep?" which is actually a continuum question to the third question, here as a result of the Pearson correlation, which can be seen in the appendix as Table - 5, shows us that the p-value of the test is 0.1306, which is greater than the significance level alpha = 0.05. We can conclude that Brain weight and rem sleep are NOT correlated with a correlation coefficient of -0.2213348 and p-value of 0.1306. Second question that is answered in the fourth question is about the estimation of total sleep by linear regression, and this regression is made in between each -vore and their body weights. In the Table - 6 on appendix, the results of the linear model can be seen and it shows that for some of the -vore types sleep time and vore type is not significant at all with 0.76 probability. For insectivore and Carnivore there is at alpha 0.05 level a significance. Also it is seen that sleep time is also related with the body weight. From the R-squared value we can see that values are not well fit into the model, and from the F-statistic we can clearly deduce that Overall the statistics is significant and perhaps there might be a linear model after all for these relevance. Lastly in Table - 7, one can see the predictions at confidence level 0.95.
+  
+  In the last question, we conducted a variance analysis to see if there is a significant clustered zones for different -vore types for total sleep time, by that we wanted to conclude with a further study that, having different eating habits affect sleeping behavior significantly. Later on, also wanted to see the results of how domestication as a conservation type affects the sleeping time and it's variance. From the Figure - 5, check appendix, it can be seen that there are no statistical significance for the -vore types and total sleep time, since most of them except omnivores have high variance which shows that there is no significant sleeping cycle for eating habits.
+  
+  Later on in the second part of the question which includes sleeping time variance analysis with domestication and other types of conservations. We can clearly see that domestication has effect on the variance of the sleeping time. In the Endangered Sleep Spread, which can be seen from Figure - 6 at appendix, one can see that even some mammals sleep twenty and more hours, but when they are domesticated the range gets smaller and between 4-12 which may be an indicator that domestication has an effect on sleep time. Lastly, we wanted to make a one last One Way Anova to the conservation and sleep time comparison, and we clearly saw that from the results of Table - 8, refer to appendix[11]. From the F value we can state that the variance in the conservation(not separated but looked wholly.) shows that variation is not caused by just one variable in the data, but there is a real significant variability, which we saw on the Figure - 6 comparison[11].
+
+# Discussion/Conclusion
+
+  Since, some of our results for the questions slightly passed the threshold that is put, it actually indicates that our statistical significance are actually not that powerful. For example, in linear model R-squared scores are relatively low and for making predictions one may expect all the values in the linear model summary statistics to be comparably high. Moreover, correlation that we accepted which is -0.46 is actually not that high either, for most scientific studies, this can be said relatively low but promising. Furthermore, on the variance analysis, we saw that there is no significant effect of eating habit type to sleeping cycles, but perhaps there is and we did not include all parameters that are necessary to show that pattern. If there existed more time for the project conducted, we planned on applying non-linear mappings, and clustering methods to see some other patterns, that we might be missing just by looking at the data set. Other than that we also wanted to do a multivariate analysis on the data set to have a better picture of the mammal sleeping behavior. 
+
+# References
+
+[1]  “An updated and expanded version of The Mammals Sleep Dataset,” R. [Online]. Available: https://vincentarelbundock.github.io/Rdatasets/doc/ggplot2/msleep.html. [Accessed: 19-Jan-2022].
+
+[2] “Conservation status,” Wikipedia, 22-Dec-2021. [Online]. Available: https://en.wikipedia.org/wiki/Conservation_status. [Accessed: 19-Jan-2022]. 
+
+[3] J.-H. Kang and S.-C. Chen, “Effects of an irregular bedtime schedule on sleep quality, daytime sleepiness, and fatigue among university students in Taiwan,” BMC public health, 19-Jul-2009. [Online]. Available: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2718885/. [Accessed: 29-Jan-2022]. 
+  
+[4] C. Ford, “University of Virginia Library Research Data Services + Sciences,” Understanding Q-Q Plots, 26-Aug-2015. [Online]. Available: https://data.library.virginia.edu/understanding-q-q-plots/. [Accessed: 20-Jan-2022].
+
+[5] A. Hayes, “What is a two-tailed test?,” Investopedia, 17-Jan-2022. [Online]. Available: https://www.investopedia.com/terms/t/two-tailed-test.asp. [Accessed: 31-Jan-2022]. 
+
+[6] C. Koch, “Does brain size matter?,” Scientific American, 01-Jan-2016. [Online]. Available: https://www.scientificamerican.com/article/does-brain-size-matter1/. [Accessed: 31-Jan-2022]. 
+
+[7] Z. Jaadi, “Eveything you need to know about interpreting correlations,” Medium, 16-Oct-2019. [Online]. Available: https://towardsdatascience.com/eveything-you-need-to-know-about-interpreting-correlations-2c485841c0b8. [Accessed: 20-Jan-2022].
+
+[8] J. Brown, “Interpreting R output for simple linear regression part 1,” YouTube, 31-Jan-2016. [Digital Video]. Available: https://www.youtube.com/watch?v=u7TxjUI4PRI. [Accessed: 19-Jan-2022]. 
+
+[9] J. Brown, “Interpreting R output for simple linear regression part 2,” YouTube, 8-Feb-2016. [Digital Video]. Available: https://www.youtube.com/watch?v=sKW2umonEvY. [Accessed: 19-Jan-2022]. 
+
+[10] “Variance analysis,” Corporate Finance Institute, 31-Jan-2022. [Online]. Available: https://corporatefinanceinstitute.com/resources/knowledge/accounting/variance-analysis/. [Accessed: 31-Jan-2022]. 
+
+[11] R. Bevans, “ANOVA in R: A step-by-step guide,” Scribbr, 01-Jul-2021. [Online]. Available: https://www.scribbr.com/statistics/anova-in-r/. [Accessed: 31-Jan-2022]. 
+
+# Appendix
+
+## Photos of the Authors
+  Here all the group members who made this project to be successfully accomplished. Please look at the figure-1 in the appendices to see the authors.
+
+\newpage
+### Figure-1
+  
+```{r, echo=FALSE,out.width="25%",out.height="20%",fig.cap="Images of Group Members- Burkan, Yusuf, Zeynep, Sena, Ismail(Left-Up to Right-Down)",fig.show='hold',fig.align='center'}
+
+knitr::include_graphics(c("E:/Tubitak/Abdullah_Burkan-Bereketoglu_ChE204-2020Fall.jpg","E:/2021-2022 Fall - Spring Books/STAT291/Project2/Yusuf_Turan.jpeg","E:/2021-2022 Fall - Spring Books/STAT291/Project2/Zeynep_Oz.jpeg","E:/2021-2022 Fall - Spring Books/STAT291/Project2/Sena_Gulizar_Aktas.jpeg","E:/2021-2022 Fall - Spring Books/STAT291/Project2/Ismail_Cagan_Yilmaz.jpeg"))
+
+```
+
+\newpage
+## Table-1
+  
+```{r, echo=TRUE, include=FALSE}
+definitions <- c("Shows the name of the mammal of the traits, a categorical variable.",
+                 "Shows each individual mammals genus (taxonomic group above species) group, a categorical variable.",
+                 "Shows each individual mammals -vore group, a categorical variable.",
+                 "Shows each individual mammals order (taxonomic group above family) group, a categorical variable.",
+                 "Shows each individual mammals conservation type (Endangered, least concern, etc.), a categorical variable.",
+                 "Shows each individual mammals total sleeping time each day, a numeric variable.",
+                 "Shows each individual mammals total time spent on rem sleep each day, a numeric variable.",
+                 "Shows each individual mammals total time spent on rem sleep versus total sleep time each day, a numeric (ratio) variable.",
+                 "Shows each individual mammals total time of being awake each day, a numeric variable.",
+                 "Shows each individual mammals brain weight, a numeric variable.",
+                 "Shows each individual mammals body weight, a numeric variable.")
+
+```
+
+  
+```{r, echo=FALSE, results='asis'}
+
+names = c("Name", "Genus", "Vore", "Order", "Conserv.","Total Sleep", "Rem Sleep", "Sleep Cycle Ratio","Awaken Time", "Brain weight", "Body Weight")
+
+
+define_table <- cbind(names,definitions)
+colnames(define_table) = c("Features", "Definitions")
+knitr::kable(define_table)
+```
+\newpage
+## Table-2
+  
+```{r, echo=TRUE, include=FALSE}
+questions <- c("Is there a linear dependency that is statistically significant between brain weight and total sleep time?",
+                 "Is there any significant difference between the means of brain weight of Carnivore and Omnivore animals?",
+                 "Is there any relationship between body weight and total sleep?",
+                 "Total sleep estimation of the animal's eating behavior and their body weight with linear model.",
+                 "Variance Analysis of Sleep Time for corresponding eating habit and for domestication and other conservation types, to see if there exist a statistically significant difference between Sleep time related to these features.")
+
+```
+  
+```{r, echo=FALSE, results='asis'}
+
+q_names = c("Q1", "Q2", "Q3", "Q4", "Q5")
+
+question_table <- cbind(q_names,questions)
+colnames(question_table) = c("Q# ", " Questions")
+knitr::kable(question_table)
+```
+\newpage 
+## Figure - 2
+
+```{r, echo = FALSE, fig.cap="Linearity test Q-Q plot"}
+q1 <- read.csv("E:/msleep (1).csv",stringsAsFactors = F,header = T)
+q1_subset <- subset(q1,!is.na(brainwt))
+model_qq <-lm(sleep_total ~ brainwt ,data = q1_subset)
+plot(model_qq,which=2)
+
+```
+
+\newpage
+## Figure - 3
+  
+```{r, echo = FALSE,  fig.cap="Brain Weight vs Vore Types Boxplot",fig.show='hold',fig.align='center'}
+
+q2 <- read.csv("E:/msleep (1).csv",stringsAsFactors = F,header = T)
+
+carni.brainwt <- na.omit(subset(q2, vore=="carni", select=c(name,vore,brainwt,bodywt)))
+omni.brainwt <- na.omit(subset(q2, vore=="omni", select=c(name,vore,brainwt,bodywt)))
+vore <- c(carni.brainwt$vore,omni.brainwt$vore)
+brainwt <- c(carni.brainwt$brainwt,omni.brainwt$brainwt)
+
+boxplot(brainwt~vore,xlab="Vore types",ylab="Brain weights (kg)",main="Analysis of Vore and Brain weight on Observed Animals")
+```
+
+## Table - 3
+
+```{r, echo=FALSE}
+
+
+t.test(omni.brainwt$brainwt,carni.brainwt$brainwt,alternative="two.sided",var.equal = F)
+
+```
+
+## Table - 4
+  
+```{r, echo = FALSE}
+q3 <- read.csv("E:/msleep (1).csv",stringsAsFactors = F,header = T)
+cordata <- cbind(q3$sleep_total, q3$bodywt, q3$sleep_rem, q3$brainwt)
+colnames(cordata) <- c("Total.sleep","Body.weight", "Rem.sleep", "Brain.weight")
+cordata <- as.data.frame(cordata)
+cordata <- na.omit(cordata)
+corr <- cor.test(cordata$Total.sleep, cordata$Body.weight, method = "pearson")
+corr
+
+```
+\newpage
+## Figure - 4
+
+```{r, echo = FALSE, fig.cap="Body weight vs total sleep time correlation plot",fig.show='hold',fig.align='center'}
+
+plot(cordata$Total.sleep, cordata$Body.weight,
+      xlab = "Total amount of sleep, in hours",
+      ylab = "Body weight in kilograms")
+text(paste("Correlation:", round(corr$estimate,2)), x = 15, y = 550)
+
+
+```
+\newpage
+
+## Table - 5
+
+```{r,echo=FALSE}
+q4 <- read.csv("E:/msleep (1).csv",stringsAsFactors = F,header = T)
+corr_rem <- cor.test(q4$sleep_rem, q4$brainwt, 
+                method = "pearson")
+corr_rem
+```
+\newpage
+## Table - 6
+
+```{r,echo=FALSE}
+sleep_vore_lm <- lm(sleep_total ~ vore + bodywt ,data = q4)
+summary(sleep_vore_lm)
+```
+
+## Table - 7
+
+```{r, echo =FALSE}
+new_variables <- data.frame(vore = c("herbi","herbi","carni","omni","insecti"),bodywt = c(100,56,0.6,75,32))
+predict(sleep_vore_lm, newdata = new_variables,
+        interval = "confidence", level = 0.95)
+```
+\newpage
+
+## Figure - 5
+
+```{r, echo=FALSE, fig.cap="Sleep Spread vs -vore type plot",fig.show='hold',fig.align='center'}
+
+q5 <- read.csv("E:/msleep (1).csv",stringsAsFactors = F,header = T)
+
+
+data.vore <- c()
+data.sleep.tot <- c()
+
+for(i in 1:length(q5$sleep_total)){
+  if(!is.na(q5$vore[i])){
+    data.vore <- c(data.vore,q5$vore[i])
+    data.sleep.tot <- c(data.sleep.tot,q5$sleep_total[i])
+  }
+}
+
+var.sleep.tot <- var(data.sleep.tot)
+
+par(mfrow = c(2,2))
+#carni
+carni_var <- var(q5$sleep_total[which(q5$vore =="carni")])
+plot(q5$sleep_total[which(q5$vore =="carni")],
+     col = "purple",
+     ylab = "Total Sleep Time",
+     xlab = "Carnivore",
+     main = "Carnivore Sleep Spread")
+text(5,5,"Variance is= ", cex = 0.5)
+text(7.2,5,round(carni_var,2), cex = 0.5)
+
+#omni
+omni_var <- var(q5$sleep_total[which(q5$vore =="omni")])
+plot(q5$sleep_total[which(q5$vore =="omni")],
+     col = "orange",
+     ylab = "Total Sleep Time",
+     xlab = "Omnivore",
+     main = "Omnivore Sleep Spread")
+text(12,18,"Variance is= ", cex = 0.5)
+text(14.5,18,round(omni_var,2), cex = 0.5)
+
+#herb
+herbi_Var <- var(q5$sleep_total[which(q5$vore =="herbi")])
+plot(q5$sleep_total[which(q5$vore =="herbi")],
+     col = "green",
+     ylab = "Total Sleep Time",
+     xlab = "Herbivore",
+     main = "Herbivore Sleep Spread")
+text(7,7,"Variance is= ", cex = 0.5)
+text(10.7,7,round(herbi_Var,2), cex = 0.5)
+
+#insect
+insecti_Var <- var(q5$sleep_total[which(q5$vore =="insecti")])
+plot(q5$sleep_total[which(q5$vore =="insecti")],
+     col = "yellow",
+     ylab = "Total Sleep Time",
+     xlab = "Insectivore",
+     main = "Insectivore Sleep Spread")
+text(2,10,"Variance is= ", cex = 0.5)
+text(2.6,10,round(insecti_Var,2), cex = 0.5)
+mtext("General Spread: 20.93 ",side = 3, line = -14, outer = TRUE)
+
+```
+
+\newpage
+## Figure - 6
+
+```{r, echo = FALSE,  fig.cap="Sleep Spread vs Domesticated or not Domesticated(conservation) type plot",fig.show='hold',fig.align='center'}
+
+## Domestication vs others.
+
+conservation.vore.type <- c()
+conservation.vore.sleep.total <- c()
+conservation.type <- c()
+
+for(i in 1:length(q5$sleep_total)){
+  if(!is.na(q5$vore[i]) && !is.na(q5$conservation[i])){
+    conservation.vore.type <- c(conservation.vore.type,q5$vore[i])
+    conservation.vore.sleep.total <- c(conservation.vore.sleep.total,q5$sleep_total[i])
+    conservation.type <- c(conservation.type,q5$conservation[i])
+  }
+}
+
+domesticated.sleep <- c()
+sleep.time.dom <- c()
+endangered.sleep <- c()
+
+for(i in 1:length(conservation.vore.sleep.total)){
+  if(conservation.type[i] == "domesticated"){
+    domesticated.sleep <- c(domesticated.sleep, conservation.type[i])
+    sleep.time.dom <- c(sleep.time.dom, conservation.vore.sleep.total[i])
+  } else{
+    endangered.sleep <- c(endangered.sleep, conservation.vore.sleep.total[i])
+  }
+}
+
+cons.total.var <- var(conservation.vore.sleep.total)
+domesticated.var <-var(sleep.time.dom)
+endangered.var <- var(endangered.sleep)
+
+par(mfrow = c(2,1))
+#domesticated
+plot(sleep.time.dom,
+     col = "purple",
+     ylab = "Total Sleep Time",
+     xlab = "Domesticated",
+     main = "Domesticated Sleep Spread")
+text(3,6,"Variance is= ", cex = 0.65)
+text(3.9,6,round(domesticated.var,2), cex = 0.65)
+
+#endangered
+plot(endangered.sleep,
+     col = "orange",
+     ylab = "Total Sleep Time",
+     xlab = "Endangered",
+     main = "Endangered Sleep Spread")
+text(4,18,"Variance is= ", cex = 0.65)
+text(8,18,round(endangered.var,2), cex = 0.65)
+
+mtext("General Conservation Spread: 24.75 ",side = 3, line = -12, outer = TRUE)
+
+```
+\newpage
+
+## Table - 8
+
+```{r,echo = FALSE}
+one.way.anova <- aov(q4$sleep_total ~ q4$conservation)
+
+summary(one.way.anova)
+```

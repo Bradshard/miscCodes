@@ -1,0 +1,11 @@
+---
+title: "burkan-bereketoglu-2355170-quiz1-stat291"
+author: "Abdullah Burkan Bereketoglu"
+date: "11/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+

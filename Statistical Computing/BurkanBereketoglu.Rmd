@@ -1,0 +1,390 @@
+---
+title: "Homework 2 - Burkan Bereketoglu"
+header-includes:
+- \usepackage{titling}
+- \posttitle{\end{center}}
+- \pretitle{\begin{center}\LARGE\includegraphics[width=6cm, height = 8cm]{"C:/Users/Wilkins Inc/OneDrive/Desktop/odtu.png"}\\[\bigskipamount]}
+description: | 
+  Homework 2 of the Statistical Computing I / Fall-2021 at METU. 
+author: 
+  - "2355170 - Abdullah Burkan Bereketoglu"
+date: "12/23/2021"
+mainfont: Times New Roman
+fontsize: 12pt
+documentclass: report
+output:
+  pdf_document:
+    fig_caption: true
+    toc: yes
+    toc_depth: '3'
+    latex_engine: xelatex
+    highlight: tango
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+    theme: united
+    highlight: tango
+---
+
+```{r setup, echo=FALSE}
+#tinytex::install_tinytex()
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+# Introduction
+
+  Welcome to my homework!!!
+
+```{r, echo=FALSE,out.width="25%",out.height="20%",fig.show='hold',fig.align='center'}
+
+knitr::include_graphics("E:/Tubitak/Abdullah_Burkan-Bereketoglu_ChE204-2020Fall.jpg")
+
+```
+
+  In this homework I, Burkan, I prepared a nice pdf to show all the parts of the questions in different parts and so. 
+
+# Question 1
+
+  In this question we are going to read through some files then analyze their rows, do five-number summary statistics and so.
+
+## Question 1 - part A
+
+  Here from us it is asked that to read some data files that are added to odtuclass with the homework. Data1 has variable names AGE, FAT, GENDER. Data2 has ID's MT1 scores up to 2 decimanls and also MT2 and Final scores of some identities. Lastly Data3 has bunch of values for now with some of them are starred.
+  
+```{r, echo=TRUE, warning=FALSE}
+
+data_1 <- read.delim("E:/2021-2022 Fall - Spring Books/STAT291/data1.txt",
+                     header = FALSE,
+                     stringsAsFactors = FALSE)
+
+data_2 <- read.csv("E:/2021-2022 Fall - Spring Books/STAT291/data2.csv",
+                   header = TRUE,
+                   dec = ".")
+
+data_3 <- read.delim("E:/2021-2022 Fall - Spring Books/STAT291/data3.txt",
+                     header= FALSE,
+                     stringsAsFactors = FALSE)
+
+
+#First 5 rows of datas
+head(data_1, n = 5)
+head(data_2, n = 5)
+head(data_3, n = 5)
+
+#structures of data sets.
+str(data_1)
+str(data_2)
+str(data_3)
+```
+
+  R for now sees the data_1 and data_3 values as characters, also data_2 values are seen as characters too except ID. Here I didn't convert the data set to something that can you can make analysis. That is done in part B due to analysis is asked in part B. 
+  
+  
+## Question 1 - Part B
+
+  Here in this part we converted the data1.txt file into a dataframe that had AGE,FAT,GENDER variables and also GENDER variable as mentioned in the txt turned into a factor.
+
+```{r, echo=TRUE, warning=FALSE}
+# Install and load reader R package
+#install.packages("reader") # to skip some lines.
+library("reader")
+library("stringr") # For str_trim
+
+data_1_formatted = 
+  n.readLines("E:/2021-2022 Fall - Spring Books/STAT291/data1.txt",
+                               n = nrow(data_1)-1,
+                               skip = 2)
+
+data_1_formatted = 
+  as.data.frame(do.call(rbind,
+                        strsplit(data_1_formatted, split=" {2,10}")),
+                                 stringsAsFactors=FALSE)
+
+names(data_1_formatted) = c("AGE","FAT","GENDER")
+
+data_1_formatted$AGE = as.integer(data_1_formatted$AGE)
+data_1_formatted$FAT = as.double(data_1_formatted$FAT)
+data_1_formatted$GENDER = as.factor(data_1_formatted$GENDER)
+
+summary(data_1_formatted$AGE[which(data_1_formatted$GENDER == "m")])
+summary(data_1_formatted$AGE[which(data_1_formatted$GENDER == "f")])
+
+```
+ 
+  Here we can see by the results that minimum age of males are lower than females, also maximum age in the group for males is also bigger. On the other hand male mean is lower than the female mean or one can say 2nd Quartile. Also one can see that male data is more compact, with some outliers, but female counterpart of the data set is more sparse.
+  
+## Question 1 - Part C
+
+  Here we will order the data1 by Age and Gender then print the first 10 rows of the new ordered data frame.
+  
+```{r, echo=TRUE, warning=FALSE}
+
+ordered_data_1 <- data_1_formatted[with(data_1_formatted,
+                                        order(data_1_formatted[,1],
+                                              data_1_formatted[,3])),] 
+# [,3] is Gender, [,1] is AGE so ordered by both columns.
+
+head(ordered_data_1, n = 10)
+```
+
+  Here it is seen the first 10 rows of the ordered data set of the data1 by Age and Gender together. Since gender is factor both f and m have integer values and it is ordered by that.
+  
+## Question 1 - Part D
+
+
+```{r, echo=TRUE, warning=FALSE}
+
+data_3_formatted = 
+  read.table("E:/2021-2022 Fall - Spring Books/STAT291/data3.txt",
+                              header= FALSE,
+                              stringsAsFactors = FALSE)
+
+data_3_formatted[duplicated(data_3_formatted),]
+
+nrow(data_3_formatted[duplicated(data_3_formatted),])/nrow(data_3_formatted)
+
+
+for(i in 1:nrow(data_3_formatted)){
+  for(i1 in 1:4){
+    if(data_3_formatted[i,i1] == "**"){
+      data_3_formatted[i,i1] = NA
+    }
+  }
+}
+
+
+data_3_formatted = 
+  na.omit(data_3_formatted[!duplicated(data_3_formatted),])
+
+tail(data_3_formatted, n = 10)
+
+```
+
+  Here at the end we omitted na rows and duplicated values and override our data frame and saved these into it.
+  
+## Question 1 - Part E
+
+  Here it is asked from us that to write a conversion code from data frame in R to csv file.
+
+```{r, echo=TRUE, warning=FALSE}
+
+write.csv(data_3_formatted,
+          "E:/2021-2022 Fall - Spring Books/STAT291/BurkanBereketoglu.csv",
+          row.names = FALSE)
+
+```
+
+  By this it is the end of Question one, and file is saved.
+  
+# Question 2
+
+  In the question description it is given that a course consists of 20 participants, and there are 2 midterms and 1 final exam, in which all are in the data2.csv . Scoring of the course is given as Score = 0.3 * MT1 + 0.3 * MT2 + 0.4 * Final. It is asked us that to run the codeblock given.
+  
+```{r, echo=TRUE, warning=FALSE}
+library("plyr")
+data_2$MT1 = as.double(gsub(",",".",gsub("\\.","",data_2$MT1)))
+data_2$MT2 = as.double(gsub(",",".",gsub("\\.","",data_2$MT2)))
+data_2$Final = as.double(gsub(",",".",gsub("\\.","",data_2$Final)))
+
+
+data_2 <- rbind(data_2,
+sample(50:100,size=3),
+sample(30:90,size=3))
+
+data_2$ID[21] = 21
+data_2$ID[22] = 22
+
+Grade_letter = c()
+
+for(i in 1:nrow(data_2)){
+  Grade_letter = 
+    c(Grade_letter, data_2[i,2] * 0.3 + data_2[i,3] * 0.3 + data_2[i,4]* 0.4)
+}
+
+Letter_Grade = c()
+
+for(i in 1:length(Grade_letter)){
+  if(as.integer(Grade_letter[i])>= 90){
+    Letter_Grade = c(Letter_Grade, "AA")
+  } else if(as.integer(Grade_letter[i]) <= 89 &&
+            as.integer(Grade_letter[i]) >= 85){
+    Letter_Grade = c(Letter_Grade, "BA")
+  } else if(as.integer(Grade_letter[i]) <= 84 &&
+            as.integer(Grade_letter[i]) >= 80){
+    Letter_Grade = c(Letter_Grade, "BB")
+  } else if(as.integer(Grade_letter[i]) <= 79 &&
+            as.integer(Grade_letter[i]) >= 75){
+    Letter_Grade = c(Letter_Grade, "CB")
+  } else if(as.integer(Grade_letter[i]) <= 74 &&
+            as.integer(Grade_letter[i]) >= 70){
+    Letter_Grade = c(Letter_Grade, "CC")
+  } else if(as.integer(Grade_letter[i]) <= 69 &&
+            as.integer(Grade_letter[i]) >= 65){
+    Letter_Grade = c(Letter_Grade, "DC")
+  } else if(as.integer(Grade_letter[i]) <= 64 &&
+            as.integer(Grade_letter[i]) >= 60){
+    Letter_Grade = c(Letter_Grade, "DD")
+  } else if(as.integer(Grade_letter[i]) <= 59 &&
+            as.integer(Grade_letter[i]) >= 50){
+    Letter_Grade = c(Letter_Grade, "FD")
+  } else{
+    Letter_Grade = c(Letter_Grade, "FF")
+  }
+}
+
+scores_of_students = c()
+
+Grade_letter = cbind(Grade_letter,Letter_Grade)
+scores_of_students = cbind(data_2$ID,Grade_letter)
+scores_of_students = as.data.frame(scores_of_students)
+names(scores_of_students) = c("ID", "Grade Average", "Letter Grade")
+
+
+scores_of_students$`Grade Average` =
+  as.double(scores_of_students$`Grade Average`)
+scores_of_students$ID = as.integer(scores_of_students$ID)
+scores_of_students
+scores_of_students$`Letter Grade` = as.factor(scores_of_students$`Letter Grade`)
+
+count(scores_of_students$`Letter Grade`)
+
+```
+
+  Here in this question we made a data frame from average grades of the students in the course, and then assigned them letter grades by comparing their grade with the intervals, when it returned true for that value we gave that letter grade. Later we assigned Id's that they priorly had. Checked the frequencies of how many of each letter grade assigned to sum of students.
+  
+# Question 3
+
+  Here in this question, I needed to write a function that will give me the Collatz conjecture for a given positive integer.
+  Definition of the function is given in the description the homework.
+
+```{r, echo=TRUE, error=TRUE}
+
+Collatz <- function(x){
+  a <- double()
+  while(TRUE){
+    if(x == round(x) && x >= 1){
+      a = c(a,x)
+      if(x %% 2 == 0){
+      x = x/2
+      } else{
+          if(x == 1){
+            return(a)
+            break
+        } else{
+        x = 3*x + 1
+        }
+      } 
+    } else{
+      stop('x is not a positive integer.')
+    }
+  }
+}
+
+Collatz(11)
+Collatz(27)
+Collatz(-5)
+Collatz(6.5)
+```
+
+  We made a function, that does the function mentioned above. The output is the values that at each step the variable we first put took. I couldn't give the values directly side by side so I used cat function to do that.
+  
+# Question 4
+
+  Here in this question it is asked from us that we need to write a function that can check whether a positive integer is prime or not, it also should check whether a given value is integer or even positive or not. It can also be both not integer and positive hence we also need to check that one out.
+  
+```{r, echo=TRUE}
+
+prime_func <- function(x){
+  if(x >= 1){
+    if(x == round(x)){
+      if(any(x %% 2:(sqrt(x)) == 0)){
+        paste(x,"is not a Prime Number.")
+      } else{
+        paste(x,"is a Prime Number")
+      }
+    } else{
+      paste(x,"is not an integer !!!")
+    }
+  } else{
+    if(x == round(x)){
+      paste(x,"is not a postive integer !!!")
+    } else{
+      paste(x,"is not positive, and not integer !!!")
+    }
+  }
+}
+
+for (x in c(5, 4, 2.5, -4, 123, 1907)){
+  print(prime_func(x))
+}
+
+```
+
+  In the given function we checked all the things that are asked from us, which are given in the question description.
+
+# Question 5
+
+  Here in this question it is asked from us that 
+
+```{r, echo=TRUE}
+
+number_to_text <- function(x){
+  if(x >= 0 && x <= 999){
+    single_digits <- 
+      list(zero=0, one=1, two=2, three=3, four=4, five=5,
+                       six=6, seven=7, eight=8, nine=9)
+    teens <- 
+      list(eleven=11, twelve=12, thirteen=13, fourteen=14, fifteen=15,
+                  sixteen=16, seventeen=17, eighteen=18, nineteen=19)
+    two_digits_w_o_teens <- 
+      list(ten=10, twenty=20, thirty=30, forty=40, fifty=50,
+                       sixty=60, seventy=70, eighty=80, ninety=90)
+    two_digits <- c(teens,two_digits_w_o_teens)
+    if(x >= 100 && x <= 999){
+      
+      combination = 
+        paste(names(two_digits[which(two_digits == ((x - x%%10)/10 - 
+                                                      (x - x%%100)/10)*10)]),
+                          names(single_digits[which(single_digits == 
+                                                      x %% 10)]),
+                          sep = "-")
+      
+      paste(names(single_digits[which(single_digits == 
+                                        (x - x %% 100)/100)]),
+            "hundred and",
+            combination)
+      
+    } else if(x >= 10 && x <= 99){
+      if(x >= 10 && x <= 19){
+        paste(names(two_digits[which(two_digits == 
+                                       x %% 20)])) # anything above 19 is okay.
+        
+      } else{
+        
+        combination = 
+          paste(
+            names(two_digits[
+              which(two_digits == ((x - x%%10)/10 - (x - x%%100)/10)*10)]),
+                            names(single_digits[which(single_digits == 
+                                                        x %% 10)]),
+                            sep = "-")
+        paste(combination)
+      }
+      
+    } else{
+      paste(names(single_digits[which(single_digits == 
+                                        x %% 10)]))
+    }
+  } else{
+    paste("x is not in the interval [0,999]") 
+  }
+}
+
+for(x in c(0,5,10,15,57,538,999,-22)){
+  print(number_to_text(x))
+}
+
+```
