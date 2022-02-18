@@ -1,0 +1,812 @@
+---
+title: "Assignment#6: Evaluation and Validity of Clusters"
+author: "Mert Efe"
+date: "06.12.2021"
+output: 
+  pdf_document:
+    includes:
+      in_header: header.tex
+---
+
+# Introduction
+
+I'm using the  [\textcolor{blue}{Crime in Berlin, 2012 - 2019}](https://www.kaggle.com/danilzyryanov/crime-in-berlin-2012-2019) dataset [3]. This dataset consists of 1200 rows with 20 columns, where four columns are categorical and the rest numerical. 
+Assignment#6: Evaluation and Validity of Clusters starts at page 28. Page 3 - 14 belongs to Assignment#4::Projection of Data. Page 15 - 27 belongs to Assignment#5: Data Clustering. 
+
+# Libraries 
+
+```{r attr.source='.numberLines'}
+library(clusterSim)
+library(clValid)
+library(factoextra, quietly = TRUE)
+suppressPackageStartupMessages(library(dendextend))
+library(cluster)
+library(MASS)
+library(reticulate, quietly = TRUE)
+use_python("usr/bin/python3")
+library(tidyverse, quietly = TRUE)
+library(umap)
+library(Rtsne)
+```
+
+# Data Preprocessing 
+
+All district regions are separated listed depending on their district. So it might be helpful for the task to summarize them. We're summarizing all crimes depending on year and district. The district codes and the location are not relevant since we want to summarize the crimes regarding the district. So we're throwing them out. The new dataset will be a 96x18 tibble. 
+
+``` {python attr.source='.numberLines'}
+import numpy as np 
+import pandas as pd
+
+data = np.array(pd.read_csv("E:/2021-2022 Fall - Spring Books/CENG574/Berlin_crimes.csv", sep=',', header=None))
+new_data = np.zeros((97, 18), dtype=object)
+
+acc = np.zeros((16))
+index = 1
+
+for i in range(1, data.shape[0]):
+    if i+1 == 1201:
+        acc = acc + data[i, 4:20].astype(float)  
+        new_data[index, 0] = data[i, 0]
+        new_data[index, 1] = data[i, 1]
+        new_data[index, 2:18] = acc 
+        acc = np.zeros((16))
+    else: 
+        # Same Year
+        if data[i, 0] == data[i+1, 0]:
+            # Same Distrinct
+            if data[i, 1] == data[i+1, 1]:
+                acc = acc + data[i, 4:20].astype(float)
+            # Differenct Distrinct
+            else:
+                acc = acc + data[i, 4:20].astype(float)  
+                new_data[index, 0] = data[i, 0]
+                new_data[index, 1] = data[i, 1]
+                new_data[index, 2:18] = acc 
+                acc = np.zeros((16))
+                index += 1
+        # Different Year
+        else: 
+                acc = acc + data[i, 4:20].astype(float)  
+                new_data[index, 0] = data[i, 0]
+                new_data[index, 1] = data[i, 1]
+                new_data[index, 2:18] = acc 
+                acc = np.zeros((16))
+                index += 1
+# Header
+new_data[0, 0:2] = data[0, 0:2]
+new_data[0, 2:] = data[0, 4:]
+np.savetxt("Berlin_crimes_compressed.csv", new_data, delimiter=",", fmt="%s")
+
+```
+
+```{r attr.source='.numberLines'}
+data_tbl <- read_csv("Berlin_crimes_compressed.csv", show_col_types = FALSE)
+```
+
+# Assignment#4::Projection of Data
+
+## Principle Component Analysis 
+
+We're centering and scaling our data to calculate with prcomp() the principal components [2]. The function returns 5 parameters [7]. The first *sdev* contains the standard deviations of the principal components [7]. *rotation* contains the eigenvectors [4]. *x* contains the principal component score for each sample [4]. *scale* and *center* are containing the values with which PCA is scaled and centered [7]. \newline
+With the summary()-function [2] we can observe that our first principal component covers 67.8% of the variance and the second 11.1%. So, using the first and second principal component, we cover 78.9% of the variance with them. To visualize it as a plot I created a Scree Plot using following References [1,5]. Also I plotted the data in the 2D space. 
+
+```{r attr.source='.numberLines',  fig.width=14, fig.height=6}
+pca_data_tbl <- prcomp(data_tbl[3:18], center = TRUE, scale = TRUE)
+summary(pca_data_tbl)
+
+# Creating a Scree Plot 
+# Ref [5]
+pca.var <- pca_data_tbl$sdev^2
+prop <- pca.var/sum(pca.var)
+# Ref [1]
+barplot(prop, 
+        ylim = c(0,0.7), 
+        main = "Scree Plot", 
+        xlab = "Principal Components", 
+        ylab = "Proportion of Variance")
+
+# Creating 2PC Plot
+ggplot(as_tibble(pca_data_tbl$x), aes(x = PC1, y = PC2)) + 
+  geom_point() + 
+  xlab("PC1 (67.8%)") + 
+  ylab("PC2 (11.1%)") + 
+  ggtitle("First Two Principal Components")
+
+```
+
+To get a better representation of the data, we can plot labels instead of points [1]. Therefore I generated a list, containing the labels by concatenating the Year and Districts. 
+
+```{r attr.source='.numberLines', fig.width=14, fig.height=20}
+# creating empty list
+year_district = list()
+# adding the labels to list 
+for (i in (1:96)) {
+   year_district = append(year_district, 
+                          paste(data_tbl$Year[i],data_tbl$District[i], sep = "_")
+                          )
+  }
+# create tibble
+pca_year_district <- tibble("Year_District" = year_district, 
+               "PC1" = pca_data_tbl$x[,1], 
+               "PC2" = pca_data_tbl$x[,2])
+
+ggplot(data = pca_year_district, aes(x = PC1, y = PC2, label = Year_District)) +
+  geom_text() + 
+  geom_label() + 
+  ggtitle("PCA Plot with Labels")
+```
+
+## Multi Dimensional Scaling (MDS)
+
+### Classical (Metric) Multidimensional Scaling
+
+An other linear approach is classical multidimensional scaling, also known as principle coordinate analysis. The cmdscale()-function takes the data in a distance structure and the dimension to which we want to reduce it [7].
+
+```{r attr.source='.numberLines', fig.width=14, fig.height=6}
+euclidean_data_mds <- cmdscale(dist(data_tbl[3:18]), k = 2)
+ids <- c(1:96)
+euclidean_data_pco_tbl <- tibble("ID" = ids, 
+                                 "Dim1" = euclidean_data_mds[,1], 
+                                 "Dim2" = euclidean_data_mds[,2])
+
+ggplot(euclidean_data_pco_tbl, aes(x = Dim1, y = Dim2)) + 
+  geom_point() + 
+  xlab("Dim1") + 
+  ylab("Dim2") + 
+  ggtitle("Classical (Metric) Multidimension Scaling, k=2, Euclidean Distance")
+
+```
+
+Again we're plotting for a better representation a labeled variant. But before, we're calculating again Classical Multidimension Scaling however with manhatttan as the distance function. 
+ 
+```{r attr.source='.numberLines', fig.width=14, fig.height=6}
+manhattan_data_mds <- cmdscale(dist(data_tbl[3:18], method = "manhattan"), k = 2)
+manhattan_data_pco_tbl <- tibble("ID" = ids, 
+                                 "Dim1" = manhattan_data_mds[,1], 
+                                 "Dim2" = manhattan_data_mds[,2])
+
+ggplot(manhattan_data_pco_tbl, aes(x = Dim1, y = Dim2)) + 
+  geom_point() + 
+  xlab("Dim1") + 
+  ylab("Dim2") + 
+  ggtitle("Classical (Metric) Multidimension Scaling, k=2, Manhatten Distance")
+```
+Now we're taking a look to the labeled plots. First for the Classical Multidimension Scaling Data with euclidean as the distance function. 
+
+```{r attr.source='.numberLines', fig.width=14, fig.height=20}
+# create tibble
+euclidean_pco_year_district <- tibble("Year_District" = year_district, 
+                            "PC1" = euclidean_data_mds[,1], "PC2" = euclidean_data_mds[,2])
+ggplot(data = euclidean_pco_year_district, aes(x = PC1, y = PC2, label = Year_District)) +
+  geom_text() + 
+  geom_label() + 
+  xlab("Dim1") + 
+  ylab("Dim2") + 
+  ggtitle("PCO Plot with Labels, dist_method=Euclidean")
+```
+
+Now we're doing the same for the data with manhattan as the distance function. 
+
+```{r attr.source='.numberLines', fig.width=14, fig.height=20}
+# create tibble
+manhattan_pco_year_district <- tibble("Year_District" = year_district, 
+                            "PC1" = manhattan_data_mds[,1], "PC2" = manhattan_data_mds[,2])
+ggplot(data = manhattan_pco_year_district, aes(x = PC1, y = PC2, label = Year_District)) +
+  geom_text() + 
+  geom_label() + 
+  xlab("Dim1") + 
+  ylab("Dim2") + 
+  ggtitle("PCO Plot with Labels, dist_method=Manhattan")
+```
+
+### Sammon's Non-Linear Mapping
+
+My last used Multi Dimensional Scaling method is Sammon's Non-Linear Mapping. It's provided in the MASS-Library [7] and was one of the given function from the lecture slides. It's also a non-linear mapping method. The results should be interesting, since the other methods where linear mapping methods. Again we have the data in a distance structure and the wanted dimension as an argument [7]. First we're performing it again with euclidean as distance function then with manhattan. 
+
+```{r attr.source='.numberLines', fig.width=14, fig.height=6}
+euclidean_data_sammon <- sammon(dist(data_tbl[3:18], method = "euclidean"), k = 2)
+euclidean_sammon_points_tbl_year_district <- tibble("Year_District" = year_district, 
+                            "Dim1" = euclidean_data_sammon$points[,1], 
+                            "Dim2"= euclidean_data_sammon$points[,2])
+ggplot(data = euclidean_sammon_points_tbl_year_district, aes(x = Dim1, y = Dim2)) + 
+  geom_point() + 
+  xlab("Dim1") + 
+  ylab("Dim2") + 
+  ggtitle("Sammon's Non-Linear Mapping, Euclidean")
+```
+
+
+```{r attr.source='.numberLines', fig.width=14, fig.height=20}
+ggplot(data = euclidean_sammon_points_tbl_year_district, 
+       aes(x = Dim1, y = Dim2, label = Year_District)) +
+  geom_text() + 
+  geom_label() + 
+  xlab("Dim1") + 
+  ylab("Dim2") + 
+  ggtitle("Sammon's Non-Linear Mapping Plot with Labels,Euclidean")
+```
+
+Now we're performing the sammon()-function with manhattan as the distance function.
+
+```{r attr.source='.numberLines', fig.width=14, fig.height=6}
+manhattan_data_sammon <- sammon(dist(data_tbl[3:18], method = "manhattan"), k = 2)
+manhattan_sammon_points_tbl_year_district <- tibble("Year_District" = year_district, 
+                            "Dim1" = manhattan_data_sammon$points[,1], 
+                            "Dim2"= manhattan_data_sammon$points[,2])
+ggplot(data = manhattan_sammon_points_tbl_year_district, aes(x = Dim1, y = Dim2)) + 
+  geom_point() + 
+  xlab("Dim1") + 
+  ylab("Dim2") + 
+  ggtitle("Sammon's Non-Linear Mapping, Manhattan")
+```
+
+
+```{r attr.source='.numberLines'}
+```
+
+\newpage
+
+# Assignment#5:: Data Clustering
+
+## Hierarchical Cluster Analysis 
+
+### Finding best linkage
+
+To perform hierarchical clustering in R we use the agnes()-method, which is provided in the cluster-library. As in [9] described, agnes is an agglomerative hierarchial cluster algorithm, which means that we start with a single cluster and repeat the algorithm until we formed a big cluster which consists of all leafs [9]. This is exactly the same like the example from the lecture. In the lecture we learned 4 types of linkages. MIN, MAX, Group Average and Distance Between Centroids. Theoretically there was a fifth called Ward's Method, however we did not talked about it in detail, I will just use these 4 types of linkages. The agnes()-method returns also the agglomerative coefficient which describes how strong the clustering structure is [9]. Unfortunately agnes() does not include Distance Between Centroids linkage. As an alternative I could use hclust() since they perform similar [9], but hclust() does not provide the agglomerative coefficient. For this reason I have to ignore the Distance Between Centroids linkage. So, the best way to find the best linkage will be performing agnes() our all linkages and compare their agglomerative coefficient. Before performing agnes() I will scale the data, which could be useful to have them in a same space. 
+
+```{r attr.source='.numberLines', fig.width=14, fig.height=8}
+
+scaled_data <- scale(data_tbl[3:18])
+# Ref [9]: Maximum = complete, Minimum = single, Average = average
+linkages = c("complete", "single", "average") #, "centroid")
+dict_linkage = c("MAX", "MIN", "Group Average")
+iter = 1
+# Ref. [9]
+for (i in linkages) {
+  hierarchial_cluster <- agnes(scaled_data, method = i)
+  print(pltree(hierarchial_cluster, cex = 0.5, hang = -1, 
+               main = paste("Dendrogram of Agnes with", dict_linkage[iter],"-Linkage"), 
+               xlab = paste("agglomerative coefficient", hierarchial_cluster$ac)))
+  iter <- iter + 1
+}
+
+```
+
+### Perform clustering on best linkage
+
+After obtaining the best linkage for hierarchical clustering I can built the clusters using cutree() [9]. Since I need to provide a k for the number of cluster, I will create a for loop to find the best solution. 
+```{r attr.source='.numberLines', fig.width=3.5, fig.height=4}
+# MAX Linkage
+best_linkage_hier_cluster <- agnes(scaled_data, method = "complete")
+
+for (i in c(1:10)) {
+  # Ref. [9]
+  tree_cluster <- cutree(best_linkage_hier_cluster, k = i)
+  print(fviz_cluster(list(cluster = tree_cluster, data = data_tbl[3:18]), 
+                     main = paste("Hierarchical Clustering with", i, "Clusters")))
+}
+
+```
+
+### Plotting the Dendrogram with colored clusters for K={4,5}
+
+Last step for hierarchical cluster I will plot the clustered tree. 
+
+```{r attr.source='.numberLines', fig.width=14, fig.height=8}
+#list_tree_cluster = list()
+for (i in c(4:5)) {
+  # Ref. [9]
+  tree_cluster <- cutree(best_linkage_hier_cluster, k = i)
+  print(plot(as.hclust(best_linkage_hier_cluster), cex = 0.5, hang = -1))
+  rect.hclust(best_linkage_hier_cluster, k = i, border = 2:i+1)
+  #list_tree_cluster = append(list_tree_cluster, list(tree_cluster))
+}
+```
+
+
+## K-Means Clustering  
+
+### Clustering the data
+
+kmeans() is the function to perform the K-Means algorithm in R. It takes the data and how many centers k we want to have. Optional, it also can take nstart. nstart it the number of multiple initial configurations [8]. So in my case, also as described in [8], I take nstart = 25 to have 25 inital configuration, where best one is taken. To find out the best cluster I created again a for loop for 10 runs. The results will be plotted and we can analyse them. 
+
+```{r attr.source='.numberLines', fig.width=3.5, fig.height=4}
+# Reference [8]
+kmeans_cluster_list = list()
+
+for (i in c(1:10)) {
+  kmeans_cluster <- kmeans(scaled_data, centers = i, nstart = 25)
+  print(fviz_cluster(kmeans_cluster, data = data_tbl[3:18], 
+                     main = paste("kMeans with", i, "Clusters")))
+  cat("\n")
+  # Since kMeans could give different results for 
+  # the same K because centroids are placed randomly, I save them. 
+  kmeans_cluster_list = append(kmeans_cluster_list, list(kmeans_cluster))
+}
+
+```
+
+### Analysing Cluster k = 4
+
+Since KMeans with k = 4 and Hierarchical Clustering with cutree k = 4 provides the exact same solution, I'm using the solutions from kMeans to plot the Districts colored by their clusters. 
+
+```{r attr.source='.numberLines', fig.width=14, fig.height=20}
+
+kmeans_cluster_4 <- kmeans_cluster_list[[4]]
+
+for (i in c(1:4)) {
+  print(paste("Elements in Cluster", i, ":", kmeans_cluster_4$size[i]))
+}
+
+# create tibble
+pca_year_district_cluster_kmeans <- tibble("Year_District" = year_district, 
+               "PC1" = pca_data_tbl$x[,1], 
+               "PC2" = pca_data_tbl$x[,2],
+               "Cluster" = kmeans_cluster_4$cluster)
+
+ggplot(data = pca_year_district_cluster_kmeans, aes(x = PC1, y = PC2, 
+                                                    label = Year_District, 
+                                                    fill = Cluster)) +
+  geom_text() + 
+  geom_label() + 
+  ggtitle("PCA Plot with Labels and Clusters")
+
+```
+
+### Finding optimal K  
+
+To find the optimal k for kMeans, I will use the Elbow Method. The Elbow Method wants to minimize the total within-cluster sum of square [8]. fviz_nbclust() is a function which calculates the total within-cluster sum of square for different k sizes and visualize them in a plot [8]. To obtain the optimal k, it is necessary to look for the bend [8]. 
+
+```{r attr.source='.numberLines', fig.width=4, fig.height=4}
+# Reference [8]
+fviz_nbclust(scaled_data, kmeans, method = "wss") 
+
+```
+
+\newpage
+
+# Assignment#6: Evaluation and Validity of Clusters
+
+I will perform two different methods for each external, internal, relativ criteria for the results of KMeans and Hierarchical Clustering.
+
+## external criteria
+
+Unfortunately the dataset I chose has no labels. So, I'm not able to perform external criteria. 
+
+## internal criteria
+
+### Rousseeuw's Silhouette - KMeans
+
+index.S() is a method provided in the clusterSim library. As learnt in th lecture, it calculates the internal cluster quality index. The silhouette index should be as close as possible to 1. First I calculate the index for all 10 calculated clusters for KMeans, then for the hierarchical clustering. Regarding the Ellbow Method in KMeans, I thought k=4 is the best number of clusters for the dataset. 
+It is not possible to calculate the silhouette index for k=1, since an error occurs. So, I start with k=2. 
+
+```{r attr.source='.numberLines', fig.width=4, fig.height=4}
+# create list which contains cluster assignment for data for all clusters, except k=1
+silhouette_list <- list()
+for (i in c(2:10)) {
+  silhouette_list <- append(silhouette_list, 
+                            tibble("Cluster" = kmeans_cluster_list[[i]]$cluster))
+}
+
+#calculate index
+silhouette_indicies <- list()
+numb_cluster <- list()
+for (i in c(1:9)) {
+  silhouette_indicies <- append(silhouette_indicies, index.S(dist(scaled_data), 
+                                                             silhouette_list[[i]]))
+  numb_cluster <- append(numb_cluster, i)
+}
+
+plot_index_tbl <- tibble("Index" = 0, "Cluster" = 0)
+for (i in c(1:9)) {
+  plot_index_tbl <- add_row(plot_index_tbl, 
+                            "Index" = silhouette_indicies[[i]], 
+                            "Cluster" = numb_cluster[[i]])
+}
+
+plot_index_tbl <- slice(plot_index_tbl, c(2:10))
+#create plot
+ggplot(plot_index_tbl, aes(x = Cluster, y = Index)) +
+  geom_bar(stat="identity") + 
+  theme(axis.ticks.x = element_blank(), 
+        axis.text.x = element_blank()) +
+  xlab("Number of Cluster, starting k=2") + 
+  ggtitle("Rousseeuw's Silhouette, KMeans") 
+
+```
+
+### Rousseeuw's Silhouette - Hierarchical Clustering 
+
+```{r attr.source='.numberLines', fig.width=4, fig.height=4}
+
+best_linkage_hier_cluster <- agnes(scaled_data, method = "complete")
+
+hierarchical_clustering_list <- list()
+
+for (i in c(1:10)) {
+  # Ref. [9]
+  hierarchical_clustering_list <- 
+    append(hierarchical_clustering_list, 
+           tibble("Clusters" = cutree(best_linkage_hier_cluster, k = i)))
+}
+
+# create list which contains cluster assignment for data for all clusters, except k=1
+silhouette_list_hc <- list()
+for (i in c(2:10)) {
+  silhouette_list_hc <- append(silhouette_list_hc, 
+                               tibble("Cluster" = hierarchical_clustering_list[[i]]))
+}
+
+#calculate index
+silhouette_indicies_hc <- list()
+numb_cluster_hc <- list()
+for (i in c(1:9)) {
+  silhouette_indicies_hc <- append(silhouette_indicies_hc, index.S(dist(scaled_data), 
+                                                             silhouette_list_hc[[i]]))
+  numb_cluster_hc <- append(numb_cluster_hc, i)
+}
+
+plot_index_tbl_hc <- tibble("Index" = 0, "Cluster" = 0)
+for (i in c(1:9)) {
+  plot_index_tbl_hc <- add_row(plot_index_tbl_hc, 
+                            "Index" = silhouette_indicies_hc[[i]], 
+                            "Cluster" = numb_cluster_hc[[i]])
+}
+
+plot_index_tbl_hc <- slice(plot_index_tbl_hc, c(2:10))
+#create plot
+ggplot(plot_index_tbl_hc, aes(x = Cluster, y = Index)) +
+  geom_bar(stat="identity") + 
+  theme(axis.ticks.x = element_blank(), 
+        axis.text.x = element_blank()) +
+  xlab("Number of Cluster, starting k=2") + 
+  ggtitle("Rousseeuw's Silhouette, 
+          Hierarchical Clustering ") 
+
+```
+
+### C-Index - KMeans
+
+In the R-Documentation is written that the number of clusters k with minimizes the Index is the optimal amount of clusters. The code is exactly the same as above for Silhouette. Just some variables and the called function is different. I used the index.C() function in the clusterSim library. 
+
+```{r attr.source='.numberLines', fig.width=4, fig.height=4}
+# create list which contains cluster assignment for data for all clusters, except k=1
+c_index <- list()
+for (i in c(2:10)) {
+  c_index <- append(c_index, 
+                            tibble("Cluster" = kmeans_cluster_list[[i]]$cluster))
+}
+
+#calculate index
+indicies_cindex <- list()
+numb_cluster_cindex <- list()
+for (i in c(1:9)) {
+  indicies_cindex <- append(indicies_cindex, index.C(dist(scaled_data), 
+                                                             c_index[[i]]))
+  numb_cluster_cindex <- append(numb_cluster_cindex, i)
+}
+
+plot_index_tbl_cindex <- tibble("Index" = 0, "Cluster" = 0)
+for (i in c(1:9)) {
+  plot_index_tbl_cindex <- add_row(plot_index_tbl_cindex, 
+                            "Index" = indicies_cindex[[i]], 
+                            "Cluster" = numb_cluster_cindex[[i]])
+}
+
+plot_index_tbl_cindex <- slice(plot_index_tbl_cindex, c(2:10))
+#create plot
+ggplot(plot_index_tbl_cindex, aes(x = Cluster, y = Index)) +
+  geom_bar(stat="identity") + 
+  theme(axis.ticks.x = element_blank(), 
+        axis.text.x = element_blank()) +
+  xlab("Number of Cluster, starting k=2") + 
+  ggtitle("C-Index, KMeans") 
+
+```
+
+### C-Index - Hierarchical Clustering 
+
+```{r attr.source='.numberLines', fig.width=4, fig.height=4}
+# create list which contains cluster assignment for data for all clusters, except k=1
+c_index_hc <- list()
+for (i in c(2:10)) {
+  c_index_hc <- append(c_index_hc, 
+                            tibble("Cluster" = hierarchical_clustering_list[[i]]))
+}
+
+#calculate index
+indicies_cindex_hc <- list()
+numb_cluster_cindex_hc <- list()
+for (i in c(1:9)) {
+  indicies_cindex_hc <- append(indicies_cindex_hc, index.C(dist(scaled_data), 
+                                                             c_index_hc[[i]]))
+  numb_cluster_cindex_hc <- append(numb_cluster_cindex_hc, i)
+}
+
+plot_index_tbl_cindex_hc <- tibble("Index" = 0, "Cluster" = 0)
+for (i in c(1:9)) {
+  plot_index_tbl_cindex_hc <- add_row(plot_index_tbl_cindex_hc, 
+                            "Index" = indicies_cindex_hc[[i]], 
+                            "Cluster" = numb_cluster_cindex_hc[[i]])
+}
+
+plot_index_tbl_cindex_hc <- slice(plot_index_tbl_cindex_hc, c(2:10))
+#create plot
+ggplot(plot_index_tbl_cindex_hc, aes(x = Cluster, y = Index)) +
+  geom_bar(stat="identity") + 
+  theme(axis.ticks.x = element_blank(), 
+        axis.text.x = element_blank()) +
+  xlab("Number of Cluster, starting k=2") + 
+  ggtitle("C-Index, Hierarchical Clustering ") 
+
+```
+
+## relative criteria
+
+For calculating relative criteria I will use Davies-Bouldin's index from the clusterSim library and Dunn Index from the clValid library. Its again the same code as for calculating internal criteria, just with slightly changes.  
+
+### Davies-Bouldin's index - KMeans
+
+```{r attr.source='.numberLines', fig.width=4, fig.height=4}
+# create list which contains cluster assignment for data for all clusters, except k=1
+db_index <- list()
+for (i in c(2:10)) {
+  db_index <- append(db_index, 
+                            tibble("Cluster" = kmeans_cluster_list[[i]]$cluster))
+}
+
+#calculate index
+indicies_dbindex <- list()
+numb_cluster_dbindex <- list()
+for (i in c(1:9)) {
+  indicies_dbindex <- append(indicies_dbindex, index.DB(scaled_data, db_index[[i]])$DB)
+  numb_cluster_dbindex <- append(numb_cluster_dbindex, i)
+}
+
+plot_index_tbl_dbindex <- tibble("Index" = 0, "Cluster" = 0)
+for (i in c(1:9)) {
+  plot_index_tbl_dbindex <- add_row(plot_index_tbl_dbindex, 
+                            "Index" = indicies_dbindex[[i]], 
+                            "Cluster" = numb_cluster_dbindex[[i]])
+}
+
+plot_index_tbl_dbindex <- slice(plot_index_tbl_dbindex, c(2:10))
+#create plot
+ggplot(plot_index_tbl_dbindex, aes(x = Cluster, y = Index)) +
+  geom_bar(stat="identity") + 
+  theme(axis.ticks.x = element_blank(), 
+        axis.text.x = element_blank()) +
+  xlab("Number of Cluster, starting k=2") + 
+  ggtitle("Davies-Bouldin's index, KMeans") 
+
+```
+
+### Davies-Bouldin's index - Hierarchical Clustering
+
+Regarding the R Documentation for index.DB(), the optimal amount of clusters will be the one which minimize the Davies-Bouldin's index. 
+
+```{r attr.source='.numberLines', fig.width=4, fig.height=4}
+# create list which contains cluster assignment for data for all clusters, except k=1
+db_index_hc <- list()
+for (i in c(2:10)) {
+  db_index_hc <- append(db_index_hc, 
+                            tibble("Cluster" = hierarchical_clustering_list[[i]]))
+}
+
+#calculate index
+indicies_db_hc <- list()
+numb_cluster_db_hc <- list()
+for (i in c(1:9)) {
+  indicies_db_hc <- append(indicies_db_hc, index.DB(scaled_data, db_index_hc[[i]])$DB,)
+  numb_cluster_db_hc <- append(numb_cluster_db_hc, i)
+}
+
+plot_index_tbl_db_hc <- tibble("Index" = 0, "Cluster" = 0)
+for (i in c(1:9)) {
+  plot_index_tbl_db_hc <- add_row(plot_index_tbl_db_hc, 
+                            "Index" = indicies_db_hc[[i]], 
+                            "Cluster" = numb_cluster_db_hc[[i]])
+}
+
+plot_index_tbl_db_hc <- slice(plot_index_tbl_db_hc, c(2:10))
+#create plot
+ggplot(plot_index_tbl_db_hc, aes(x = Cluster, y = Index)) +
+  geom_bar(stat="identity") + 
+  theme(axis.ticks.x = element_blank(), 
+        axis.text.x = element_blank()) +
+  xlab("Number of Cluster, starting k=2") + 
+  ggtitle("Davies-Bouldin's index, 
+          Hierarchical Clustering ") 
+
+```
+
+### Dunn Index - KMeans
+
+Regarding the R Documentation for dunn(), the optimal amount of clusters will be the one which maximizes the Dunn Index.
+
+```{r attr.source='.numberLines', fig.width=4, fig.height=4}
+# create list which contains cluster assignment for data for all clusters, except k=1
+dunn_index <- list()
+for (i in c(2:10)) {
+  dunn_index <- append(dunn_index, 
+                            tibble("Cluster" = kmeans_cluster_list[[i]]$cluster))
+}
+
+#calculate index
+indicies_dunn_index <- list()
+numb_cluster_dunn_index <- list()
+for (i in c(1:9)) {
+  indicies_dunn_index <- append(indicies_dunn_index, dunn(dist(scaled_data), 
+                                                          dunn_index[[i]]))
+  numb_cluster_dunn_index <- append(numb_cluster_dunn_index, i)
+}
+
+plot_index_tbl_dunn_index <- tibble("Index" = 0, "Cluster" = 0)
+for (i in c(1:9)) {
+  plot_index_tbl_dunn_index <- add_row(plot_index_tbl_dunn_index, 
+                            "Index" = indicies_dunn_index[[i]], 
+                            "Cluster" = numb_cluster_dunn_index[[i]])
+}
+
+plot_index_tbl_dunn_index <- slice(plot_index_tbl_dunn_index, c(2:10))
+#create plot
+ggplot(plot_index_tbl_dunn_index, aes(x = Cluster, y = Index)) +
+  geom_bar(stat="identity") + 
+  theme(axis.ticks.x = element_blank(), 
+        axis.text.x = element_blank()) +
+  xlab("Number of Cluster, starting k=2") + 
+  ggtitle("Dunn Index, KMeans") 
+
+```
+
+### Dunn Index - Hierarchical Clustering
+
+```{r attr.source='.numberLines', fig.width=4, fig.height=4}
+# create list which contains cluster assignment for data for all clusters, except k=1
+dunn_index_hc <- list()
+for (i in c(2:10)) {
+  dunn_index_hc <- append(dunn_index_hc, 
+                            tibble("Cluster" = kmeans_cluster_list[[i]]$cluster))
+}
+
+#calculate index
+indicies_dunn_index_hc <- list()
+numb_cluster_dunn_index_hc <- list()
+for (i in c(1:9)) {
+  indicies_dunn_index_hc <- append(indicies_dunn_index_hc, dunn(dist(scaled_data), 
+                                                                dunn_index_hc[[i]]))
+  numb_cluster_dunn_index_hc <- append(numb_cluster_dunn_index_hc, i)
+}
+
+plot_index_tbl_dunn_index_hc <- tibble("Index" = 0, "Cluster" = 0)
+for (i in c(1:9)) {
+  plot_index_tbl_dunn_index_hc <- add_row(plot_index_tbl_dunn_index_hc, 
+                            "Index" = indicies_dunn_index_hc[[i]], 
+                            "Cluster" = numb_cluster_dunn_index_hc[[i]])
+}
+
+plot_index_tbl_dunn_index_hc <- slice(plot_index_tbl_dunn_index_hc, c(2:10))
+#create plot
+ggplot(plot_index_tbl_dunn_index_hc, aes(x = Cluster, y = Index)) +
+  geom_bar(stat="identity") + 
+  theme(axis.ticks.x = element_blank(), 
+        axis.text.x = element_blank()) +
+  xlab("Number of Cluster, starting k=2") + 
+  ggtitle("Dunn Index, 
+          Hierarchical Clustering") 
+
+```
+
+\newpage
+
+
+## Assigment 7 - t-SNE (Student t-Distributed Stochastic Neighbor Embedding)
+
+tSNE can be said as a really useful dimensionality reduction method, which will allow the user to visualize data embedded in lower dimensions such as in 2-D, for to see patterns and trends in the data set. tSNE
+
+```{r attr.source='.numberLines', fig.width=4, fig.height=4, echo=TRUE}
+
+
+data_tbl <- iconv(data_tbl, 'UTF-8', 'ASCII')
+c = 0
+for (per in seq(1,300,5)) {
+
+    tSNE_Data = Rtsne(data_tbl,perplexity = per)
+    df = data.frame(X = tSNE_Data$Y[,1],
+                    Y = tSNE_Data$Y[,2],
+                    Labels = enc2utf8(data_tbl$District))
+    plot = ggplot(data = df, aes(x = X ,y = Y, col = Labels)) +
+      geom_point()
+    c = c + 1
+    # To save the multiple plots
+    fileName = paste("ID",c,"Perplexity", per,".png")
+    png(fileName)
+    print(plot)
+    dev.off()
+
+}
+
+## TSNE
+tSNE_Data = Rtsne(data_tbl,perplexity = 81)
+    df_tsne = data.frame(X = tSNE_Data$Y[,1],
+                    Y = tSNE_Data$Y[,2],
+                    Labels = dataLabels)
+
+```
+
+## Analysis and Evaluation of Results, and Discussion
+
+* **Assignment#4**
+    1. Principle Component Analysis: 
+        - In the **First Two Principal Components-Plot** we can observe a cluster right and a cluster with widely spread points in the middle to the left. Actually the cluster with widely spread points in the middle to the left could be seperated into two clusters, otherwise there would be huge outliers. 
+        - In the **PCA Plot with Labels** we can observe that all crimes happend in *Mitte* are on the left side, while crimes in *Spandau*, *Marzahn-Hellersdorf*, *Reinickendorf*, *Steglitz-Zehlendorf*, *Lichtenberg*, and *Treptow-Köpenick* are clustered together at the right side. In the middle *Friedrichshain-Kreuzberg*, *Neukölln*, *Tempelhof-Schöneberg*, *Charlottenburg-Wilmersdorf*, and *Pankow* appears, whether *Friedrichshain-Kreuzberg*, and *Neukölln* are more left spread and *Tempelhof-Schöneberg*, *Charlottenburg-Wilmersdorf*, and *Pankow* more right. 
+    2. Classical (Metric) Multidimensional Scaling: 
+        - Euclidean: 
+          - We can observe that the scatter plot **Classical (Metric) Multidimension Scaling, k=2, Euclidean Distance** has some similarities to **First Two Principal Components-Plot**. However, here we can directly observe 3 different clusters. But we also can observe that we don't have so many points on the left side anymore, while the points in the middle increased. To check it we're taking a look to **PCO Plot with Labels, dist_method=Euclidean** to find out which points moved.
+          - Taking a look to **PCO Plot with Labels, dist_method=Euclidean** with regard to **PCA Plot with Labels** the biggest difference is resulting in the middle and the left side. *Friedrichshain-Kreuzberg* which could be assigned to a Cluster with *Mitte* before is now a part of the middle one. The points in the middle are more closely together and are more on the right side. 
+        - Manhattan: 
+          - Comparing **Classical (Metric) Multidimension Scaling, k=2, Manhattan Distance** with the **Classical (Metric) Multidimension Scaling, k=2, Euclidean Distance** we can observe slightly changes. Calculation with Manhattan delivers more closer lying points then with Euclidean, where the points were more widely spread. Nevertheless the amount of possible cluster did not change. 
+          - I don't think that the labeled output **PCO Plot with Labels, dist_method=Manhattan** have differences compared to **PCO Plot with Labels, dist_method=Euclidean**, since the scatter plots **Classical (Metric) Multidimension Scaling, k=2, Euclidean Distance** and **Classical (Metric) Multidimension Scaling, k=2, Manhattan Distance** looked quite similar. Nevertheless we take a look for it. 
+          - As assumed, the data within a possible cluster are the same. No changes happened therefore. So the only difference between the two versions of *Classical (Metric) Multidimensional Scaling* is that the points are more close together with manhattan for the distance function.
+    3. Sammon's Non-Linear Mapping:
+        - Euclidean: 
+          - The results from **Sammon's Non-Linear Mapping, Euclidean** has very similar to **Classical (Metric) Multidimension Scaling, k=2, Euclidean Distance**. The changes are very slightly. Some points moved a bit within the possible cluster. Again we have three well separable clusters. Compared to **Classical (Metric) Multidimension Scaling, k=2, Manhattan Distance** the results are also quite similar. The points are just more widely spread in **Sammon's Non-Linear Mapping, Euclidean**. 
+          - Regarding **Sammon's Non-Linear Mapping Plot with Labels,Euclidean** and compared to **PCO Plot with Labels, dist_method=Euclidean** and **PCO Plot with Labels, dist_method=Manhattan** the points within a possible clusters did not changed. *Mitte* is still alone at the left side, while the right points are still closely together and the middle points are a bit spread. 
+        - Manhattan:
+          - The output from **Sammon's Non-Linear Mapping, Manhattan** is identical with the output from **Classical (Metric) Multidimension Scaling, k=2, Manhattan Distance**. That's interesting since they are two different approaches. I expected slightly changes like **Sammon's Non-Linear Mapping, Euclidean** to **Classical (Metric) Multidimension Scaling, k=2, Euclidean Distance**, but there are none. So everything what I said about **Classical (Metric) Multidimension Scaling, k=2, Manhattan Distance** also applies to **Sammon's Non-Linear Mapping, Manhattan**. 
+* **Assignment#5:**
+    1. Hierarchical Clustering 
+    - Finding best linkage: 
+        - The Dendrogram with the best agglomerative coefficient is the MAX-linkage one. This means that this linkage type provides the best results for the cluster structuring. The worst agglomerative coefficient results with MIN-linkage. It's only round about 0.697, while MAX-linkage is 0.898. The average linkage has a agglomerative coefficient value of 0.836. So, I will continue to work with linkage type MAX. 
+        - I also observe that the Height is different for each type. While MAX-linkage has the largest Height with round about 14, MIN-Linkage has only Height ~4. Average-Linkage has a Height of ~8. In [9] is written that a heigher Height describes more less similarity of the observations.
+    - Perform clustering on best linkage:
+        - First of all, analyzing the different scatterplots it is interesting to realize that i would intuitively cluster the data in a different way then hierarchical clustering did. Cluster Plots with 1,2,7,8,9, and 10 clusters are nice to see, but not very useful to work with, because the data are too much or to barely separated. So the interesting cluster plots are 3,4,5, and 6. The most Plot I like is the one with 4 and 5 Clusters. In my opinion 6 Clusters are still a bit to much separated and the Plot with 3 Clusters has a very big Cluster and two small ones. 
+    - Plotting the Dendrogram with colored clusters for K={4,5}:
+        - In this plots we can observe how the clusters are defined in the tree structure. 
+2. K-Means
+    - Clustering the data:
+        - k = 3 is exatcly the same way how I would intuitively separate the data. The Clusters for k = {1,2} are to big. The data for the Clusters k = {6,7,8,9,10} are to much separated. In my opinion the best result provide k = {3,4,5}, however the centroids are better in k = {4,5}. For convenience I will take the cluster k = 4, so we have a direct comparison with Hierarchial Clustering. Taking a closer look to both plots I observed that KMeans with k = 4 and Hierarchical Clustering with cutree k = 4 provides the exact same solution. 
+        - Printing out the size of each Cluster shows that we have two small clusters with the same size and 2 with big clusters with many elements where their difference is a half of one cluster. Merging Cluster 1,2, and 4 together would result the same cluster size as cluster 3. However if I take a look to kmeans with k = 2 the algorithm would merge the cluster in a different way. 
+        - If I take the **PCA Plot with Labels** from the last assignment and fill them by their corresponing cluster, I'm able to nicely read which districts are in one Cluster. *Mitte* and *Friedrichhain-Kreuzberg* are the small clusters containing only themselves for every year. *Neukölln*, *Pankow*, *Tempelhof-Schöneberg*, and *Charlottenburg-Wilmersdorf* are in the same cluster with size 32. The biggest cluster is formed by *Lichtenberg*, *Treptow-Köpenick*, *Steglitz-Zehlendorf*, *Marzahn-Hellersdorf*, *Spandau*, and *Reinickendorf* with size 48. All Clusters contain every year for every district. It never happens that a district is assigned to a different cluster for a specific year. 
+    - Finding optimal K: 
+        - With the Elbow Method it is possible to find the optimal amount of clusters for the data. I took earlier k = 4 for conveniences reasons, but the plot shows that k = 4 is the optimal amount of cluster for the data, because there is the bend in the graph. 
+* **Assignment#6:**
+    - internal criteria: 
+        - Rousseeuw's Silhouette - KMeans:
+            - Regarding the *Rousseeuw's Silhouette, KMeans* Plot I can observe that the best silhouette index is given for k = 2, followed by k = 4. So, compared to the Ellbow Method last Assignment, Rousseeuw's Silhouette shows that the optimal number of clusters are 2 instead of 4. However, 4 Clusters are also a good amount to handle with, since its the second best result. 
+        - Rousseeuw's Silhouette - Hierarchical Clustering:
+                - I thought just by taking a look to the Hierarchical Clustering plots, that k = 4 and k = 5 provides the best solutions. However, after calculating the Rousseeuw's Silhouette I can observe, that the best index is again given by k = 2, followed by k = 3. K = 4 and k = 5 are at the third and fourth place. Its also interesting to see that both KMeans and Hierarchical Clustering provides their best Rousseeuw's Silhouette for k = 2. 
+        - C-Index - KMeans:
+            - For the C-Index the optimal amount of clusters is given for k = 6 followed by k = 8. Compared with Rousseeuw's Silhouette it is interesting to see that for Rousseeuw's Silhouette was k = 6 the worst amount of clusters. 
+        - C-Index - Hierarchical Clustering:  
+            - The optimal amount of clusters for Hierarchical Clustering is k = 7, followed by k = 6. Again, comparing to Rousseeuw's Silhouette the results are completely different. 
+    - relative criteria: 
+        - Davies-Bouldin's index - KMeans:
+            - The Davies-Bouldin's index have regarded to the first two optimal amount of clusters the same result as Rousseeuw's Silhouette. k = 2 is the optimal one, followed by k = 4.
+        - Davies-Bouldin's index - Hierarchical Clustering:
+            - Again, regarded the first two optimal amount of clusters the same result as Rousseeuw's Silhouette. k = 2 is the optimal amount of clusters, followed by k = 3. 
+        - Dunn Index - KMeans: 
+            - For the Dunn Index the optimal cluster is k = 4 followed by k = 6. Its interesting to see that regarding my thoughts the best cluster size would be k = 4 matches for the Dunn index. Compared with Rousseeuw's Silhouette k = 4 was the second optimal result, however k = 6 was the worst and for the Dunn Index it is the second best cluster size. 
+        - Dunn Index - Hierarchical Clustering:
+            - Like for KMeans, the optimal cluster is k = 4 followed by k = 6.  
+
+
+## Conclusion 
+
+* **Assignment#4: **
+    - All projecting methods delivers similar outputs for the 2D space. For every method we can figure out three possible clusters and for most time the same points belongs to a cluster. The District *Mitte* provides for every method the leftest points, plotted in 2D space. For every method the districts *Spandau*, *Marzahn-Hellersdorf*, *Reinickendorf*, *Steglitz-Zehlendorf*, *Lichtenberg*, and *Treptow-Köpenick* forms the rightest cluster and for the most time the districts *Friedrichshain-Kreuzberg*, *Neukölln*, *Tempelhof-Schöneberg*, *Charlottenburg-Wilmersdorf*, and *Pankow* forms the middle cluster. Based on this results it would be interesting to find out, why they belong to a cluster.
+* **Assignment#5: **
+    - Different clustering approaches delivers different results. Its interesting to see that some of my thoughts, how data could be clustered, were wrong. Nevertheless clustering are useful to find out which data belongs to each other. I could find out in this assignment that if I take k = 4, I got the exact same result for two different clustering approaches. Two of these 4 clusters were very small with 8  elements each, the middle one contained 32 and the biggest one 48 elements. Its also interesting to see how the cluster changes if k increases. 
+* **Assignment#6: **
+    - As for different clustering approaches, different criteria methods don't provide the same results. Regarding my thoughts for the last assignment that k = 4 will have the optimal cluster size, I was not completely wrong. I learnt in this assignment and can also conclude, that just by oberserving the plots for different clusters, it is not possible to find the best one. As an example I said for KMeans k = 6 that the data is too much separated, however for the C-Index it was the optimal solution. Also was k = 2 for both clustering apporaches often one of the optimal solutions which I did not expected. 
+
+## References 
+- [1] StatQuest with Josh Starmer, "StatQuest: PCA in R", 27 11 2017. [Online]. Available: https://www.youtube.com/watch?v=0Jp4gsfOLMs. [Accessed 19 11 2021]
+- [2] P. Nistrup, "Principal Component Analysis (PCA) 101, using R", 29.01.2019. [Online]. Available: https://towardsdatascience.com/principal-component-analysis-pca-101-using-r-361f4c53a9ff [Accessed 19 11 2021]
+- [3] Dataset: https://www.kaggle.com/danilzyryanov/crime-in-berlin-2012-2019
+- [4] Zach, "Principal Components Analysis in R: Step-by-Step Example", 01 12 2020. [Online]. Available: https://www.statology.org/principal-components-analysis-in-r/. [Accessed 19 11 2021]
+- [5] Analytics Vidhya, "PCA: A Practical Guide to Principal Component Analysis in R & Python", 21 03 2016. [Online]. Available: https://www.analyticsvidhya.com/blog/2016/03/pca-practical-guide-principal-component-analysis-python/. [Accessed 19 11 2021]
+- [6] user3498523, "add image in title page of rmarkdown pdf", 20 09 2015. [Online Forum]. Available: https://stackoverflow.com/questions/29389149/add-image-in-title-page-of-rmarkdown-pdf. [Accessed 23 11 2021]
+- [7] R Documentation
+- [8] "K-means Cluster Analysis". [Online]. Available: https://uc-r.github.io/kmeans_clustering [Accessed 02 12 2021]
+- [9] "Hierarchical Cluster Analysis" [Online]. Available: https://uc-r.github.io/hc_clustering [Accessed 29 11 2021]
