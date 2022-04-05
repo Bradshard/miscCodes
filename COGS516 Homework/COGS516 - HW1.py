@@ -226,6 +226,4 @@ np.std(samples3) # standard deviation
 az.hdi(samples3, hdi_prob=.94) # HDI 94%
 
 
-# ## Submission
-# 
-# Submit your assignment report as a Jupyter notebook markdown file `.ipynb`  format. Your submission should include both textual descriptions (in markdown blocks) and code (in code blocks). Markdown blocks can be formatted in markdown language. [See here](https://guides.github.com/features/mastering-markdown/) to learn more. 
+
